@@ -1,3 +1,4 @@
+#[derive(Default)]
 pub struct RedBlackTree<T: std::cmp::PartialOrd> {
     root: Node<T>,
     size: u64,
@@ -26,7 +27,7 @@ impl<T: std::cmp::PartialOrd> RedBlackTree<T> {
         }
     }
 
-    pub fn getSize(&self) -> u64 {
+    pub fn get_size(&self) -> u64 {
         self.size
     }
 
@@ -72,28 +73,18 @@ impl<T: std::cmp::PartialOrd> RedBlackTree<T> {
         }
     }
 
-    fn getAsVec(&self) -> Vec<T> {
-        let nodesVec: Vec<T> = Vec::new();
-        nodesVec
-    }
-
     fn recolor_tree(&mut self) {
-        let starting_node = self.root.as_mut();
+        let _starting_node = self.root.as_mut();
     }
 
     pub fn iter(&mut self) -> Iter<T> {
         let mut leaf_stack = Vec::new();
 
-        match &self.root {
-            Some(leaf_box) => {
-                leaf_stack.push(leaf_box.as_ref());
-            }
-            _ => {}
+        if let Some(leaf_box) = &self.root {
+            leaf_stack.push(leaf_box.as_ref());
         }
 
-        Iter {
-            leaf_stack: leaf_stack,
-        }
+        Iter { leaf_stack }
     }
 }
 
@@ -106,14 +97,12 @@ impl<'a, T: std::cmp::PartialOrd> Iterator for Iter<'a, T> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.leaf_stack.pop().map(|leaf| {
-            match &leaf.left {
-                Some(left_leaf) => self.leaf_stack.push(left_leaf.as_ref()),
-                _ => {}
+            if let Some(left_leaf) = &leaf.left {
+                self.leaf_stack.push(left_leaf.as_ref())
             }
 
-            match &leaf.right {
-                Some(right_leaf) => self.leaf_stack.push(right_leaf.as_ref()),
-                _ => {}
+            if let Some(right_leaf) = &leaf.right {
+                self.leaf_stack.push(right_leaf.as_ref())
             }
             &leaf.data
         })

@@ -4,7 +4,7 @@ mod tests {
 
   #[test]
   fn test_instantiation() {
-    let rb_tree : RedBlackTree<i32> = RedBlackTree::new();
+    let _rb_tree : RedBlackTree<i32> = RedBlackTree::new();
   }
 
   #[test]
@@ -17,10 +17,10 @@ mod tests {
   fn test_get_size_after_instert() {
     let mut rb_tree = RedBlackTree::new();
     rb_tree.insert(55);
-    assert_eq!(rb_tree.getSize(), 1);
+    assert_eq!(rb_tree.get_size(), 1);
 
     rb_tree.insert(55);
-    assert_eq!(rb_tree.getSize(), 2);
+    assert_eq!(rb_tree.get_size(), 2);
   }
 
   #[test]

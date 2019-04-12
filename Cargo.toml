@@ -4,4 +4,8 @@ version = "0.1.0"
 authors = ["Gabe Villalobos <gvillalobos@scalecomputing.com>"]
 edition = "2018"
 
+[lib]
+name = "derpy_lib"
+path="src/derpy/lib.rs"
+
 [dependencies]

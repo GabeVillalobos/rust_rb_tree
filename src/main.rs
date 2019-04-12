@@ -1,7 +1,7 @@
-mod derpy;
-use derpy::red_black_tree::RedBlackTree;
+extern crate derpy_lib;
+use derpy_lib::red_black_tree::RedBlackTree;
 
 fn main() {
-    let rbtree : RedBlackTree<i32> = RedBlackTree::new();
-
+    let mut rb_tree = RedBlackTree::new();
+    rb_tree.insert(42);
 }
