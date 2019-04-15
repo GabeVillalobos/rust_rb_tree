@@ -43,7 +43,6 @@ impl<T: std::cmp::PartialOrd> RedBlackTree<T> {
         self.bst_insert(new_leaf);
         self.size += 1;
         self.recolor_tree();
-        // recolor step
     }
 
     fn bst_insert(&mut self, new_leaf: Leaf<T>) {
