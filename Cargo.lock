@@ -1,4 +1,11 @@
 [[package]]
-name = "rusty_tree"
+name = "derpy"
 version = "0.1.0"
+
+[[package]]
+name = "rusty-bin"
+version = "0.1.0"
+dependencies = [
+ "derpy 0.1.0",
+]
 
