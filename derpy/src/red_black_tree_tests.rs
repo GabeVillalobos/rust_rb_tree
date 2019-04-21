@@ -4,7 +4,7 @@ mod tests {
 
   #[test]
   fn test_instantiation() {
-    let _rb_tree : RedBlackTree<i32> = RedBlackTree::new();
+    let _rb_tree: RedBlackTree<i32> = RedBlackTree::new();
   }
 
   #[test]

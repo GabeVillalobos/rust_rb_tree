@@ -5,7 +5,7 @@ use generational_arena::{Arena, Index};
 pub struct RedBlackTree<T: std::cmp::PartialOrd> {
     root: Option<Index>,
     size: u64,
-    nodes: Arena<Node<T>>
+    nodes: Arena<Node<T>>,
 }
 
 pub(crate) struct Leaf<T> {
@@ -28,7 +28,7 @@ impl<T: std::cmp::PartialOrd> RedBlackTree<T> {
         RedBlackTree {
             root: None,
             size: 0,
-            nodes : Arena::new()
+            nodes: Arena::new(),
         }
     }
 
@@ -71,8 +71,8 @@ impl<T: std::cmp::PartialOrd> RedBlackTree<T> {
                     match next_leaf_idx_option {
                         None => {
                             break;
-                        },
-                        _ => cur_idx_option = *next_leaf_idx_option
+                        }
+                        _ => cur_idx_option = *next_leaf_idx_option,
                     }
                 }
             }
@@ -106,14 +106,14 @@ impl<T: std::cmp::PartialOrd> RedBlackTree<T> {
 
         Iter {
             leaf_idx_stack,
-            nodes : &self.nodes
+            nodes: &self.nodes,
         }
     }
 }
 
 pub struct Iter<'a, T> {
     leaf_idx_stack: Vec<Index>,
-    nodes: &'a Arena<Node<T>>
+    nodes: &'a Arena<Node<T>>,
 }
 
 impl<'a, T: std::cmp::PartialOrd> Iterator for Iter<'a, T> {
@@ -132,10 +132,8 @@ impl<'a, T: std::cmp::PartialOrd> Iterator for Iter<'a, T> {
                         self.leaf_idx_stack.push(right_leaf_idx);
                     }
                     &cur_leaf.data
-                },
-                None => {
-                    panic!("Your tree is fucked. FIX IT")
                 }
+                None => panic!("Your tree is fucked. FIX IT"),
             }
         })
     }
