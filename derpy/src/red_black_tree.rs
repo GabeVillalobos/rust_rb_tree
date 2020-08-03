@@ -2,12 +2,14 @@ extern crate generational_arena;
 
 use generational_arena::{Arena, Index};
 
+#[derive(Default)]
 pub struct RedBlackTree<T: std::cmp::PartialOrd> {
     root: Option<Index>,
     size: u64,
     nodes: Arena<Node<T>>,
 }
 
+#[derive(Default, Debug)]
 pub(crate) struct Leaf<T> {
     data: T,
     color: TreeColors,
@@ -18,12 +20,20 @@ pub(crate) struct Leaf<T> {
 
 pub(crate) type Node<T> = Box<Leaf<T>>;
 
+
+#[derive(Debug)]
 pub(crate) enum TreeColors {
     Red,
     Black,
 }
 
-impl<T: std::cmp::PartialOrd> RedBlackTree<T> {
+impl Default for TreeColors {
+    fn default() -> Self {
+        Self::Red
+    }
+}
+
+impl<T: std::cmp::PartialOrd + std::fmt::Display> RedBlackTree<T> {
     pub fn new() -> Self {
         RedBlackTree {
             root: None,
@@ -37,7 +47,7 @@ impl<T: std::cmp::PartialOrd> RedBlackTree<T> {
     }
 
     pub fn insert(&mut self, val: T) {
-        let mut new_leaf = Leaf {
+        let new_leaf = Leaf {
             data: val,
             color: TreeColors::Red,
             left: None,
@@ -47,34 +57,33 @@ impl<T: std::cmp::PartialOrd> RedBlackTree<T> {
 
         self.bst_insert(new_leaf);
         self.size += 1;
-        self.recolor_tree();
+        // self.recolor_tree();
     }
 
     fn bst_insert(&mut self, mut new_leaf: Leaf<T>) {
         let mut cur_idx_option = self.root;
-        let mut right_side = false;
+        let mut left_side = false;
 
         while let Some(cur_leaf_idx) = cur_idx_option {
-            let cur_leaf_option = self.nodes.get_mut(cur_leaf_idx);
+            let cur_leaf = self
+                .nodes
+                .get_mut(cur_leaf_idx)
+                .expect("Attempted to reference a node which no longer exists");
 
-            match cur_leaf_option {
-                None => panic!("Attempted to reference a node which no longer exists"),
-                Some(cur_leaf) => {
-                    right_side = cur_leaf.data > new_leaf.data;
+            left_side = new_leaf.data < cur_leaf.data;
 
-                    let next_leaf_idx_option = if right_side {
-                        &mut cur_leaf.right
-                    } else {
-                        &mut cur_leaf.left
-                    };
+            // choose a side to insert the new leaf
+            let next_leaf_idx_option = if left_side {
+                &mut cur_leaf.left
+            } else {
+                &mut cur_leaf.right
+            };
 
-                    match next_leaf_idx_option {
-                        None => {
-                            break;
-                        }
-                        _ => cur_idx_option = *next_leaf_idx_option,
-                    }
+            match next_leaf_idx_option {
+                None => {
+                    break;
                 }
+                _ => cur_idx_option = *next_leaf_idx_option,
             }
         }
 
@@ -83,10 +92,10 @@ impl<T: std::cmp::PartialOrd> RedBlackTree<T> {
         if let Some(parent_idx) = cur_idx_option {
             let parent = self.nodes.get_mut(parent_idx).unwrap();
 
-            if right_side {
-                parent.right = Some(leaf_id);
-            } else {
+            if left_side {
                 parent.left = Some(leaf_id);
+            } else {
+                parent.right = Some(leaf_id);
             }
         } else {
             self.root = Some(leaf_id);
@@ -97,6 +106,7 @@ impl<T: std::cmp::PartialOrd> RedBlackTree<T> {
         let _starting_node = self.root.as_mut();
     }
 
+    // Initialize a new iterator struct w/ the root node as the starting point
     pub fn iter(&mut self) -> Iter<T> {
         let mut leaf_idx_stack = Vec::new();
 
@@ -116,7 +126,8 @@ pub struct Iter<'a, T> {
     nodes: &'a Arena<Node<T>>,
 }
 
-impl<'a, T: std::cmp::PartialOrd> Iterator for Iter<'a, T> {
+// Iterate through leaves using depth-first traversal
+impl<'a, T: std::cmp::PartialOrd + std::fmt::Display> Iterator for Iter<'a, T> {
     type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -124,16 +135,17 @@ impl<'a, T: std::cmp::PartialOrd> Iterator for Iter<'a, T> {
             let cur_leaf_option = self.nodes.get(leaf_idx);
             match cur_leaf_option {
                 Some(cur_leaf) => {
+                    if let Some(right_leaf_idx) = cur_leaf.right {
+                        self.leaf_idx_stack.push(right_leaf_idx);
+                    }
+
                     if let Some(left_leaf_idx) = cur_leaf.left {
                         self.leaf_idx_stack.push(left_leaf_idx);
                     }
 
-                    if let Some(right_leaf_idx) = cur_leaf.right {
-                        self.leaf_idx_stack.push(right_leaf_idx);
-                    }
                     &cur_leaf.data
                 }
-                None => panic!("Your tree is fucked. FIX IT"),
+                None => panic!("Attempted to access an empty node"),
             }
         })
     }
