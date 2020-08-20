@@ -11,7 +11,7 @@ fn main() {
     rb_tree.insert(55);
     rb_tree.insert(54);
 
-    for leaf_val in rb_tree.iter() {
+    for leaf_val in rb_tree.dfs_iter() {
         println!("{}", leaf_val);
     }
 }

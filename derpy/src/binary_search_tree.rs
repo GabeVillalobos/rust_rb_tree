@@ -1,39 +1,25 @@
 extern crate generational_arena;
-use generational_arena::{Arena, Index};
-use std::collections::{HashMap, VecDeque};
-
+use super::base_tree::{ Leaf, Node, DfsIter, BfsIter, NodeNotFoundErr };
+use std::collections::VecDeque;
 use std::fmt::Display;
-use std::cmp::{PartialEq, PartialOrd};
+use std::cmp::{ PartialOrd, PartialEq };
 
-use super::base_tree::{BfsIter, DfsIter, Leaf, Node};
+use generational_arena::{Arena, Index};
+
 
 #[derive(Default)]
-pub struct RedBlackTree<T: PartialOrd + Display> {
+pub struct BinarySearchTree<T: PartialOrd + Display> {
     root: Option<Index>,
     size: u64,
     nodes: Arena<Node<T>>,
-    colors: HashMap<Index, TreeColors>
 }
 
-#[derive(Debug)]
-pub(crate) enum TreeColors {
-    Red,
-    Black,
-}
-
-impl Default for TreeColors {
-    fn default() -> TreeColors {
-        TreeColors::Red
-    }
-}
-
-impl<T: std::cmp::PartialOrd + std::fmt::Display> RedBlackTree<T> {
+impl<T: std::cmp::PartialOrd + std::fmt::Display> BinarySearchTree<T> {
     pub fn new() -> Self {
-        RedBlackTree {
+        BinarySearchTree {
             root: None,
             size: 0,
             nodes: Arena::new(),
-            colors: HashMap::new(),
         }
     }
 
@@ -53,16 +39,7 @@ impl<T: std::cmp::PartialOrd + std::fmt::Display> RedBlackTree<T> {
         self.size += 1;
     }
 
-    fn get_node(&self, index: Index) -> &Node<T> {
-        let leaf = self
-            .nodes
-            .get(index)
-            .expect("Failed to get node from index");
-
-        leaf
-    }
-
-    fn bst_insert(&mut self, mut new_leaf: Leaf<T>) {
+    fn bst_insert(&mut self, new_leaf: Leaf<T>) {
         let mut cur_idx_option = self.root;
         let mut left_side = false;
 
@@ -89,14 +66,8 @@ impl<T: std::cmp::PartialOrd + std::fmt::Display> RedBlackTree<T> {
             }
         }
 
-        new_leaf.parent = cur_idx_option;
         let leaf_id = self.nodes.insert(Box::new(new_leaf));
-
-        self.colors.insert(
-            leaf_id,
-            TreeColors::Red
-        );
-
+        println!("Idx: {:?}", leaf_id);
         if let Some(parent_idx) = cur_idx_option {
             let parent = self.nodes.get_mut(parent_idx).unwrap();
 
@@ -110,23 +81,11 @@ impl<T: std::cmp::PartialOrd + std::fmt::Display> RedBlackTree<T> {
         }
     }
 
-    fn recolor_tree(&mut self) {
-        let _starting_node = self.root.as_mut();
+    pub fn remove(item: &T) -> Result<(), NodeNotFoundErr<T>>{
+        unimplemented!()
     }
 
-    pub fn bfs_iter(&mut self) -> BfsIter<T> {
-        let mut leaf_idx_queue = VecDeque::new();
-        if let Some(root_idx) = self.root {
-            leaf_idx_queue.push_front(root_idx);
-        }
-
-        BfsIter {
-            leaf_idx_queue,
-            nodes: &self.nodes,
-        }
-    }
-
-    // Initialize a new iterator struct w/ the root node as the starting point
+    // Create a new iterator w/ a stack for DFS taversal
     pub fn dfs_iter(&mut self) -> DfsIter<T> {
         let mut leaf_idx_stack = Vec::new();
 
@@ -139,5 +98,18 @@ impl<T: std::cmp::PartialOrd + std::fmt::Display> RedBlackTree<T> {
             nodes: &self.nodes,
         }
     }
-}
 
+    // Create a new iterator w/ a queue for BFS traversal
+    pub fn bfs_iter(&mut self) -> BfsIter<T> {
+        let mut leaf_idx_queue = VecDeque::new();
+
+        if let Some(root_idx) = self.root {
+            leaf_idx_queue.push_front(root_idx);
+        }
+
+        BfsIter {
+            leaf_idx_queue,
+            nodes: &self.nodes,
+        }
+    }
+}
