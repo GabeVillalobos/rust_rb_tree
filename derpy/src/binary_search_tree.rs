@@ -197,8 +197,6 @@ impl<T: PartialOrd + Display> BinarySearchTree<T> {
             self.root = replacement_leaf_opt;
         }
 
-        // All other operations completed successfully, so we nuke the node from our arena
-        self.nodes.remove(idx);
         self.size -= 1;
 
         Ok(())
