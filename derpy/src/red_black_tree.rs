@@ -3,7 +3,7 @@ use generational_arena::{Arena, Index};
 use std::collections::{HashMap, VecDeque};
 
 use std::fmt::Display;
-use std::cmp::{PartialEq, PartialOrd};
+use std::cmp::{PartialOrd};
 
 use super::base_tree::{BfsIter, DfsIter, Leaf, Node};
 

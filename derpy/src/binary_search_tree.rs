@@ -45,10 +45,7 @@ impl<T: PartialOrd + Display> BinarySearchTree<T> {
         let mut left_side = false;
 
         while let Some(cur_leaf_idx) = cur_idx_option {
-            let cur_leaf = self
-                .nodes
-                .get_mut(cur_leaf_idx)
-                .expect("Attempted to reference a node which no longer exists");
+            let cur_leaf = &mut self.nodes[cur_leaf_idx];
 
             left_side = new_leaf.data < cur_leaf.data;
 
@@ -72,7 +69,7 @@ impl<T: PartialOrd + Display> BinarySearchTree<T> {
 
         // Parent node found, so we set it to the corresponding child node
         if let Some(parent_idx) = cur_idx_option {
-            let parent = self.nodes.get_mut(parent_idx).unwrap();
+            let parent = &mut self.nodes[parent_idx];
 
             if left_side {
                 parent.left = Some(leaf_id);
@@ -88,10 +85,7 @@ impl<T: PartialOrd + Display> BinarySearchTree<T> {
     fn find_node_index(&self, item: &T) -> Option<Index> {
         let mut cur_node_opt = self.root;
         while let Some(node_idx) = cur_node_opt {
-            let node = self
-                .nodes
-                .get(node_idx)
-                .expect("Attempted to reference a node which no longer exists");
+            let node = &self.nodes[node_idx];
 
             if node.data == *item {
                 return Some(node_idx);
@@ -112,7 +106,7 @@ impl<T: PartialOrd + Display> BinarySearchTree<T> {
         let mut cur_leaf = leaf.right;
 
         while let Some(cur_leaf_idx) = cur_leaf {
-            let cur_node = self.nodes.get(cur_leaf_idx).expect("yeet");
+            let cur_node = &self.nodes[cur_leaf_idx];
 
             if cur_node.left.is_none() {
                 break;
@@ -125,22 +119,19 @@ impl<T: PartialOrd + Display> BinarySearchTree<T> {
     }
 
     pub fn find(&self, item: &T) -> bool {
-        match self.find_node_index(item) {
-            Some(_) => true,
-            None => false,
-        }
+        self.find_node_index(item).is_some()
     }
 
     pub fn remove(&mut self, item: &T) -> Result<(), NodeNotFoundErr> {
         // Grab larger of 2 nodes, place as root
         // Then if left node of root exists, set larger node left = root.left, insert orphaned node into sub-tree.
-        // unimplemented!()
-
         let idx = self
             .find_node_index(item)
             .ok_or_else(|| NodeNotFoundErr {})?;
 
-        let node = self.nodes.remove(idx).expect("Yeet");
+        let node = self.nodes.remove(idx).expect(
+            "exclusive access during mutation guarantees that a node exists for each index",
+        );
 
         let mut replacement_node_idx_opt = None;
         match (node.left, node.right) {
@@ -154,22 +145,24 @@ impl<T: PartialOrd + Display> BinarySearchTree<T> {
                 // Replace node with its inorder successor
                 if let Some(successor_idx) = replacement_node_idx_opt {
                     // Set parent for replacements new child nodes
-                    let mut left_leaf = self.nodes.get_mut(left_child_idx).expect("yeet");
+                    let left_leaf = &mut self.nodes[left_child_idx];
                     left_leaf.parent = Some(successor_idx);
 
-                    let mut right_leaf = self.nodes.get_mut(right_child_idx).expect("yeet");
+                    let right_leaf = &mut self.nodes[right_child_idx];
                     right_leaf.parent = Some(successor_idx);
 
-                    let mut successor_leaf = self.nodes.get_mut(successor_idx).expect("yeet");
+                    let successor_leaf = &mut self.nodes[successor_idx];
                     successor_leaf.left = node.left;
                     successor_leaf.right = node.right;
 
                     let successor_parent_opt = successor_leaf.parent;
-                    // If successor's parent exists and is not the node to be
+
+                    // If successor's parent exists and is not the node being
                     //   removed, we remove the successor node from it
-                    if successor_parent_opt.is_some() && successor_parent_opt != Some(idx) {
-                        let successor_parent_leaf =
-                            self.nodes.get_mut(successor_parent_opt.unwrap()).unwrap();
+                    if let (Some(parent_idx), true) =
+                        (successor_parent_opt, successor_parent_opt != Some(idx))
+                    {
+                        let successor_parent_leaf = &mut self.nodes[parent_idx];
 
                         if successor_parent_leaf.left == replacement_node_idx_opt {
                             successor_parent_leaf.left = None;
@@ -189,7 +182,7 @@ impl<T: PartialOrd + Display> BinarySearchTree<T> {
                 "Setting parent {:?} for {:?} with val {}",
                 node.parent, idx, node.data
             );
-            let parent = self.nodes.get_mut(parent_idx).expect("yeet");
+            let parent = &mut self.nodes[parent_idx];
             if parent.left == Some(idx) {
                 println!("Right {:?}", replacement_node_idx_opt);
                 parent.left = replacement_node_idx_opt;
@@ -201,18 +194,18 @@ impl<T: PartialOrd + Display> BinarySearchTree<T> {
 
         // Update replacement node with new parent node
         if let Some(replacement_node_idx) = replacement_node_idx_opt {
-            let replacement_node = self.nodes.get_mut(replacement_node_idx).expect("yeet");
+            let replacement_node = &mut self.nodes[replacement_node_idx];
             replacement_node.parent = node.parent;
         }
 
-        // if the removed node was the root, replace it with the replacement node (if there is one)
+        // if the removed node was the root, replace it with the replacement node
         if self.root == Some(idx) {
             self.root = replacement_node_idx_opt;
         }
 
         // All other operations completed successfully, so we nuke the node from our arena
         self.nodes.remove(idx);
-        self.size = self.size - 1;
+        self.size -= 1;
 
         Ok(())
     }

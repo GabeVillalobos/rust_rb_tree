@@ -10,6 +10,15 @@ fn verify_tree_bfs(bst: &mut BinarySearchTree<i32>, expected_vals: Vec<i32>) {
     assert_eq!(b_tree_iter.next(), None);
 }
 
+fn verify_tree_dfs(bst: &mut BinarySearchTree<i32>, expected_vals: Vec<i32>) {
+    assert_eq!(bst.get_size(), expected_vals.len());
+    let mut b_tree_iter = bst.dfs_iter();
+    for val in expected_vals {
+        assert_eq!(b_tree_iter.next(), Some(&val));
+    }
+    assert_eq!(b_tree_iter.next(), None);
+}
+
 #[test]
 fn test_instantiation() {
     let _b_tree: BinarySearchTree<i32> = BinarySearchTree::new();
@@ -57,12 +66,7 @@ fn bst_insertion() {
     b_tree.insert(54);
 
     let expected_order = vec![55, 25, 12, 54, 60, 55, 66];
-    let mut idx = 0;
-    let mut b_tree_iter = b_tree.dfs_iter();
-    while let Some(leaf) = b_tree_iter.next() {
-        assert_eq!(leaf, expected_order.get(idx).unwrap());
-        idx = idx + 1;
-    }
+    verify_tree_dfs(&mut b_tree, expected_order);
 }
 
 #[test]
@@ -129,7 +133,6 @@ fn remove_node() {
     expected_order = vec![55, 43, 97, 66, 99, 65, 100];
     verify_tree_bfs(&mut b_tree, expected_order);
 
-
     println!("Remove root node with multiple leaves");
     assert_eq!(b_tree.remove(&55).is_ok(), true);
     expected_order = vec![65, 43, 97, 66, 99, 100];
@@ -145,4 +148,3 @@ fn remove_single_root() {
     assert_eq!(b_tree.get_size(), 0);
     assert_eq!(b_tree.bfs_iter().next(), None);
 }
-
