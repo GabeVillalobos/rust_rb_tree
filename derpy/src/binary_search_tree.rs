@@ -83,18 +83,18 @@ impl<T: PartialOrd + Display> BinarySearchTree<T> {
     }
 
     fn find_node_index(&self, item: &T) -> Option<Index> {
-        let mut cur_node_opt = self.root;
-        while let Some(node_idx) = cur_node_opt {
-            let node = &self.nodes[node_idx];
+        let mut cur_leaf_opt = self.root;
+        while let Some(node_idx) = cur_leaf_opt {
+            let leaf = &self.nodes[node_idx];
 
-            if node.data == *item {
+            if leaf.data == *item {
                 return Some(node_idx);
             }
 
-            if *item < node.data {
-                cur_node_opt = node.left;
+            if *item < leaf.data {
+                cur_leaf_opt = leaf.left;
             } else {
-                cur_node_opt = node.right;
+                cur_leaf_opt = leaf.right;
             }
         }
 
@@ -103,19 +103,19 @@ impl<T: PartialOrd + Display> BinarySearchTree<T> {
 
     fn get_inorder_successor(&self, leaf: &Leaf<T>) -> Option<Index> {
         // Start with greater node, return smallest node in this sub-tree
-        let mut cur_leaf = leaf.right;
+        let mut cur_leaf_opt = leaf.right;
 
-        while let Some(cur_leaf_idx) = cur_leaf {
-            let cur_node = &self.nodes[cur_leaf_idx];
+        while let Some(cur_leaf_idx) = cur_leaf_opt {
+            let cur_leaf = &self.nodes[cur_leaf_idx];
 
-            if cur_node.left.is_none() {
+            if cur_leaf.left.is_none() {
                 break;
             }
 
-            cur_leaf = cur_node.left;
+            cur_leaf_opt = cur_leaf.left;
         }
 
-        cur_leaf
+        cur_leaf_opt
     }
 
     pub fn find(&self, item: &T) -> bool {
@@ -129,31 +129,31 @@ impl<T: PartialOrd + Display> BinarySearchTree<T> {
             .find_node_index(item)
             .ok_or_else(|| NodeNotFoundErr {})?;
 
-        let node = self.nodes.remove(idx).expect(
+        let removed_leaf = self.nodes.remove(idx).expect(
             "exclusive access during mutation guarantees that a node exists for each index",
         );
 
-        let mut replacement_node_idx_opt = None;
-        match (node.left, node.right) {
+        let mut replacement_leaf_opt = None;
+        match (removed_leaf.left, removed_leaf.right) {
             (Some(solo_child_idx), None) | (None, Some(solo_child_idx)) => {
-                replacement_node_idx_opt = Some(solo_child_idx);
+                replacement_leaf_opt = Some(solo_child_idx);
             }
             // Both children exist, so we must find the inorder successor first
             (Some(left_child_idx), Some(right_child_idx)) => {
-                replacement_node_idx_opt = self.get_inorder_successor(&node);
+                replacement_leaf_opt = self.get_inorder_successor(&removed_leaf);
 
                 // Replace node with its inorder successor
-                if let Some(successor_idx) = replacement_node_idx_opt {
-                    // Set parent for replacements new child nodes
+                if let Some(successor_idx) = replacement_leaf_opt {
+                    // Set inorder successor as the new parent node of the removed node's children
                     let left_leaf = &mut self.nodes[left_child_idx];
-                    left_leaf.parent = Some(successor_idx);
+                    left_leaf.parent = replacement_leaf_opt;
 
                     let right_leaf = &mut self.nodes[right_child_idx];
-                    right_leaf.parent = Some(successor_idx);
+                    right_leaf.parent = replacement_leaf_opt;
 
                     let successor_leaf = &mut self.nodes[successor_idx];
-                    successor_leaf.left = node.left;
-                    successor_leaf.right = node.right;
+                    successor_leaf.left = removed_leaf.left;
+                    successor_leaf.right = removed_leaf.right;
 
                     let successor_parent_opt = successor_leaf.parent;
 
@@ -164,7 +164,7 @@ impl<T: PartialOrd + Display> BinarySearchTree<T> {
                     {
                         let successor_parent_leaf = &mut self.nodes[parent_idx];
 
-                        if successor_parent_leaf.left == replacement_node_idx_opt {
+                        if successor_parent_leaf.left == replacement_leaf_opt {
                             successor_parent_leaf.left = None;
                         } else {
                             successor_parent_leaf.right = None;
@@ -177,30 +177,24 @@ impl<T: PartialOrd + Display> BinarySearchTree<T> {
         }
 
         // update parent node with new replacement child node
-        if let Some(parent_idx) = node.parent {
-            println!(
-                "Setting parent {:?} for {:?} with val {}",
-                node.parent, idx, node.data
-            );
-            let parent = &mut self.nodes[parent_idx];
-            if parent.left == Some(idx) {
-                println!("Right {:?}", replacement_node_idx_opt);
-                parent.left = replacement_node_idx_opt;
+        if let Some(parent_idx) = removed_leaf.parent {
+            let parent_leaf = &mut self.nodes[parent_idx];
+            if parent_leaf.left == Some(idx) {
+                parent_leaf.left = replacement_leaf_opt;
             } else {
-                println!("Left {:?}", replacement_node_idx_opt);
-                parent.right = replacement_node_idx_opt;
+                parent_leaf.right = replacement_leaf_opt;
             }
         }
 
         // Update replacement node with new parent node
-        if let Some(replacement_node_idx) = replacement_node_idx_opt {
+        if let Some(replacement_node_idx) = replacement_leaf_opt {
             let replacement_node = &mut self.nodes[replacement_node_idx];
-            replacement_node.parent = node.parent;
+            replacement_node.parent = removed_leaf.parent;
         }
 
         // if the removed node was the root, replace it with the replacement node
         if self.root == Some(idx) {
-            self.root = replacement_node_idx_opt;
+            self.root = replacement_leaf_opt;
         }
 
         // All other operations completed successfully, so we nuke the node from our arena
