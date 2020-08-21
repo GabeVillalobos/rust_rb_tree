@@ -123,8 +123,6 @@ impl<T: PartialOrd + Display> BinarySearchTree<T> {
     }
 
     pub fn remove(&mut self, item: &T) -> Result<(), NodeNotFoundErr> {
-        // Grab larger of 2 nodes, place as root
-        // Then if left node of root exists, set larger node left = root.left, insert orphaned node into sub-tree.
         let idx = self
             .find_node_index(item)
             .ok_or_else(|| NodeNotFoundErr {})?;
@@ -135,6 +133,7 @@ impl<T: PartialOrd + Display> BinarySearchTree<T> {
 
         let mut replacement_leaf_opt = None;
         match (removed_leaf.left, removed_leaf.right) {
+            // Only one child exists, so we swap the parent with the child
             (Some(solo_child_idx), None) | (None, Some(solo_child_idx)) => {
                 replacement_leaf_opt = Some(solo_child_idx);
             }
