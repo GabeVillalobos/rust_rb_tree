@@ -3,7 +3,7 @@ use std::fmt::Display;
 
 use super::base_tree::{Leaf, Tree};
 
-pub fn bst_insert<T: Display + PartialOrd + Copy>(
+pub fn insert_leaf<T: Display + PartialOrd + Copy>(
     tree: &mut Tree<T>,
     mut new_leaf: Leaf<T>,
 ) -> Index {
@@ -73,7 +73,7 @@ pub fn find_node_index<T: Display + PartialOrd + Copy>(tree: &Tree<T>, item: &T)
 //   handle the case where children/no left nodes exist.
 //   The future plan for this is to traverse up each parent until a left node is found
 pub fn get_inorder_successor<T: Display + PartialOrd + Copy>(
-    tree: &mut Tree<T>,
+    tree: &Tree<T>,
     leaf: &Leaf<T>,
 ) -> Option<Index> {
     // Start with greater node, return smallest node in this sub-tree
@@ -96,76 +96,68 @@ pub fn get_inorder_successor<T: Display + PartialOrd + Copy>(
 //  Starting at the root, we find the specified node and remove it from the tree.
 //  When removing a leaf with multiple children, things get a little more complicated.
 //  First, the node's data is swapped with its inorder successor's, then the inorder
-//  successor is removed recursively. 
-pub fn bst_remove_leaf<T: Display + PartialOrd + Copy>(tree: &mut Tree<T>, leaf_idx: Index) {
-    let removed_leaf = tree
-        .nodes
-        .remove(leaf_idx)
-        .expect("exclusive access during mutation guarantees that a node exists for each index");
+//  successor is removed recursively.
+pub fn remove_leaf<T: Display + PartialOrd + Copy>(tree: &mut Tree<T>, leaf_idx: Index) {
+    let mut replacement_idx_opt = None;
+    let mut recurisve_remove = false;
+    
+    let leaf_to_remove = &tree.nodes[leaf_idx];
+    // Grab the parent index, in case we need it later
+    let parent_opt = leaf_to_remove.parent;
 
-    let mut replacement_leaf_opt = None;
-    match (removed_leaf.left, removed_leaf.right) {
+    match (leaf_to_remove.left, leaf_to_remove.right) {
         // Only one child exists, so we swap the parent with the child
         (Some(solo_child_idx), None) | (None, Some(solo_child_idx)) => {
-            replacement_leaf_opt = Some(solo_child_idx);
+            replacement_idx_opt = Some(solo_child_idx);
         }
         // Both children exist, so we must find the inorder successor first
-        (Some(left_child_idx), Some(right_child_idx)) => {
-            replacement_leaf_opt = get_inorder_successor(tree, &removed_leaf);
+        (Some(_), Some(_)) => {
+            let inorder_successor = get_inorder_successor(tree, &leaf_to_remove);
 
-            // Replace node with its inorder successor
-            if let Some(successor_idx) = replacement_leaf_opt {
-                // Set inorder successor as the new parent node of the removed node's children
-                let left_leaf = &mut tree.nodes[left_child_idx];
-                left_leaf.parent = replacement_leaf_opt;
+            let successor_idx = inorder_successor
+                .expect("Proper tree structure ensures that every node with children has an inorder successor");
 
-                let right_leaf = &mut tree.nodes[right_child_idx];
-                right_leaf.parent = replacement_leaf_opt;
+            // Swap value of leaf to be deleted with its inorder successor's
+            let successor_data = tree.nodes[successor_idx].data;
+            let old_node = &mut tree.nodes[leaf_idx];
+            old_node.data = successor_data;
 
-                let successor_leaf = &mut tree.nodes[successor_idx];
-                successor_leaf.left = removed_leaf.left;
-                successor_leaf.right = removed_leaf.right;
+            recurisve_remove = true;
 
-                let successor_parent_opt = successor_leaf.parent;
-
-                // If successor's parent exists and is not the node being
-                //   removed, we remove the successor node from it
-                if let (Some(parent_idx), true) =
-                    (successor_parent_opt, successor_parent_opt != Some(leaf_idx))
-                {
-                    let successor_parent_leaf = &mut tree.nodes[parent_idx];
-
-                    if successor_parent_leaf.left == replacement_leaf_opt {
-                        successor_parent_leaf.left = None;
-                    } else {
-                        successor_parent_leaf.right = None;
-                    }
-                }
-            }
+            remove_leaf(tree, successor_idx);
         }
-        // Do nothing because we handle the "leaf" case below
+
+        // If it's a leaf, just remove the reference from it's parent and delete the node
         (None, None) => {}
     }
 
-    // update parent node with new replacement child node
-    if let Some(parent_idx) = removed_leaf.parent {
-        let parent_leaf = &mut tree.nodes[parent_idx];
-        if parent_leaf.left == Some(leaf_idx) {
-            parent_leaf.left = replacement_leaf_opt;
+    // Handles removing leaves & relinking leaves with a single child
+    if !recurisve_remove {
+        // let previous_parent = leaf_to_remove.parent;
+        if let Some(parent_idx) = parent_opt {
+            let parent_node = &mut tree.nodes[parent_idx];
+
+            if parent_node.left == Some(leaf_idx) {
+                parent_node.left = replacement_idx_opt;
+            } else {
+                parent_node.right = replacement_idx_opt;
+            }
         } else {
-            parent_leaf.right = replacement_leaf_opt;
+            // It's the root node, and we nuke the world
+            tree.root = None;
         }
-    }
 
-    // Update replacement node with new parent node
-    if let Some(replacement_node_idx) = replacement_leaf_opt {
-        let replacement_node = &mut tree.nodes[replacement_node_idx];
-        replacement_node.parent = removed_leaf.parent;
-    }
+        if let Some(replacement_idx) = replacement_idx_opt {
+            let replacement_leaf = &mut tree.nodes[replacement_idx];
+            replacement_leaf.parent = parent_opt;
+        }
 
-    // if the removed node was the root, replace it with the replacement node
-    if tree.root == Some(leaf_idx) {
-        tree.root = replacement_leaf_opt;
+        // Finally, remove the node from the arena itself
+        let _ = tree
+            .nodes
+            .remove(leaf_idx)
+            .expect("Exclusive access during mutation ensures that a node exists for every index");
+
+        tree.size -= 1;
     }
-    tree.size -= 1;
 }

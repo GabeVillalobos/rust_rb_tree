@@ -1,6 +1,6 @@
 extern crate generational_arena;
 use super::base_tree::{BfsIter, DfsIter, Leaf, Tree};
-use super::binary_search_tree_helpers::{bst_insert, bst_remove_leaf, find_node_index};
+use super::binary_search_tree_helpers::{insert_leaf, remove_leaf, find_node_index};
 use super::tree_errs::NodeNotFoundErr;
 
 use std::cmp::PartialOrd;
@@ -29,7 +29,7 @@ impl<T: PartialOrd + Display + Copy> BinarySearchTree<T> {
             parent: None,
         };
 
-        bst_insert(&mut self.tree, new_leaf);
+        insert_leaf(&mut self.tree, new_leaf);
         self.tree.size += 1;
     }
 
@@ -39,7 +39,7 @@ impl<T: PartialOrd + Display + Copy> BinarySearchTree<T> {
 
     pub fn remove(&mut self, item: &T) -> Result<(), NodeNotFoundErr> {
         let leaf_idx_to_remove = find_node_index(&self.tree, item).ok_or(NodeNotFoundErr)?;
-        bst_remove_leaf(&mut self.tree, leaf_idx_to_remove);
+        remove_leaf(&mut self.tree, leaf_idx_to_remove);
 
         Ok(())
     }

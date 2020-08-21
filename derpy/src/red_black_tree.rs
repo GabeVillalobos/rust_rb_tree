@@ -3,7 +3,7 @@ use generational_arena::Index;
 use std::collections::{HashMap, VecDeque};
 
 use super::base_tree::{BfsIter, DfsIter, Leaf, Tree};
-use super::binary_search_tree_helpers::{bst_insert, bst_remove_leaf, find_node_index};
+use super::binary_search_tree_helpers::{insert_leaf, remove_leaf, find_node_index};
 use super::tree_errs::NodeNotFoundErr;
 
 use std::cmp::PartialOrd;
@@ -47,12 +47,12 @@ impl<T: PartialOrd + Display + Copy> RedBlackTree<T> {
             parent: None,
         };
 
-        bst_insert(&mut self.bst, leaf);
+        insert_leaf(&mut self.bst, leaf);
     }
 
     pub fn remove(&mut self, item: &T) -> Result<(), NodeNotFoundErr> {
         let leaf_idx_to_remove = find_node_index(&self.bst, item).ok_or(NodeNotFoundErr)?;
-        bst_remove_leaf(&mut self.bst, leaf_idx_to_remove);
+        remove_leaf(&mut self.bst, leaf_idx_to_remove);
         Ok(())
     }
 

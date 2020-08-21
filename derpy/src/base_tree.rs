@@ -67,6 +67,11 @@ impl<'a, T: std::cmp::PartialOrd + std::fmt::Display> Iterator for BfsIter<'a, T
         let leaf_idx = self.leaf_idx_queue.pop_front()?;
         let cur_leaf = &self.nodes[leaf_idx];
 
+        // println!(
+        //     "idx: {:?} val: {} parent: {:?}  left: {:?} right: {:?}",
+        //     leaf_idx, cur_leaf.data, cur_leaf.parent, cur_leaf.left, cur_leaf.right
+        // );
+
         if let Some(left_leaf_idx) = cur_leaf.left {
             self.leaf_idx_queue.push_back(left_leaf_idx);
         }
