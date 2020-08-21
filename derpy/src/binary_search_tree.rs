@@ -118,14 +118,12 @@ impl<T: PartialOrd + Display> BinarySearchTree<T> {
         cur_leaf_opt
     }
 
-    pub fn find(&self, item: &T) -> bool {
+    pub fn contains(&self, item: &T) -> bool {
         self.find_node_index(item).is_some()
     }
 
     pub fn remove(&mut self, item: &T) -> Result<(), NodeNotFoundErr> {
-        let idx = self
-            .find_node_index(item)
-            .ok_or_else(|| NodeNotFoundErr {})?;
+        let idx = self.find_node_index(item).ok_or(NodeNotFoundErr)?;
 
         let removed_leaf = self.nodes.remove(idx).expect(
             "exclusive access during mutation guarantees that a node exists for each index",

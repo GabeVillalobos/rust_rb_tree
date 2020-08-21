@@ -1,6 +1,6 @@
 use generational_arena::{Arena, Index};
 use std::collections::VecDeque;
-use std::fmt::{Display};
+use std::fmt::Display;
 
 #[derive(Default, Debug)]
 pub struct Leaf<T: Display> {
@@ -23,10 +23,7 @@ impl<'a, T: PartialOrd + Display> Iterator for DfsIter<'a, T> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let leaf_idx = self.leaf_idx_stack.pop()?;
-        let cur_leaf = self
-            .nodes
-            .get(leaf_idx)
-            .expect("Attempted to access an empty node");
+        let cur_leaf = &self.nodes[leaf_idx];
 
         if let Some(right_leaf_idx) = cur_leaf.right {
             self.leaf_idx_stack.push(right_leaf_idx);
@@ -51,10 +48,7 @@ impl<'a, T: std::cmp::PartialOrd + std::fmt::Display> Iterator for BfsIter<'a, T
 
     fn next(&mut self) -> Option<Self::Item> {
         let leaf_idx = self.leaf_idx_queue.pop_front()?;
-        let cur_leaf = self
-            .nodes
-            .get(leaf_idx)
-            .expect("Attempted to access an empty node");
+        let cur_leaf = &self.nodes[leaf_idx];
 
         if let Some(left_leaf_idx) = cur_leaf.left {
             self.leaf_idx_queue.push_back(left_leaf_idx);

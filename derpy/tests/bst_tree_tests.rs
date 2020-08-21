@@ -93,12 +93,12 @@ fn find_items() {
     b_tree.insert(88);
     b_tree.insert(66);
 
-    assert_eq!(b_tree.find(&55), true);
-    assert_eq!(b_tree.find(&42), true);
-    assert_eq!(b_tree.find(&66), true);
-    assert_eq!(b_tree.find(&44), true);
-    assert_eq!(b_tree.find(&88), true);
-    assert_eq!(b_tree.find(&99), false);
+    assert_eq!(b_tree.contains(&55), true);
+    assert_eq!(b_tree.contains(&42), true);
+    assert_eq!(b_tree.contains(&66), true);
+    assert_eq!(b_tree.contains(&44), true);
+    assert_eq!(b_tree.contains(&88), true);
+    assert_eq!(b_tree.contains(&99), false);
 }
 
 #[test]
