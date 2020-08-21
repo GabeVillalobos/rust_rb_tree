@@ -31,7 +31,7 @@ fn test_insert_root_node() {
 }
 
 #[test]
-fn test_get_size_after_instert() {
+fn test_get_size_after_insert() {
     let mut b_tree = BinarySearchTree::new();
     b_tree.insert(55);
     assert_eq!(b_tree.get_size(), 1);
