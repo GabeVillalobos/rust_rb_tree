@@ -1,20 +1,21 @@
 extern crate generational_arena;
-use super::base_tree::{ Leaf, Node, DfsIter, BfsIter, NodeNotFoundErr };
+use super::base_tree::{BfsIter, DfsIter, Leaf, Node};
+use super::tree_errs::NodeNotFoundErr;
+
+use std::cmp::PartialOrd;
 use std::collections::VecDeque;
 use std::fmt::Display;
-use std::cmp::{ PartialOrd, PartialEq };
 
 use generational_arena::{Arena, Index};
-
 
 #[derive(Default)]
 pub struct BinarySearchTree<T: PartialOrd + Display> {
     root: Option<Index>,
-    size: u64,
+    size: usize,
     nodes: Arena<Node<T>>,
 }
 
-impl<T: std::cmp::PartialOrd + std::fmt::Display> BinarySearchTree<T> {
+impl<T: PartialOrd + Display> BinarySearchTree<T> {
     pub fn new() -> Self {
         BinarySearchTree {
             root: None,
@@ -23,7 +24,7 @@ impl<T: std::cmp::PartialOrd + std::fmt::Display> BinarySearchTree<T> {
         }
     }
 
-    pub fn get_size(&self) -> u64 {
+    pub fn get_size(&self) -> usize {
         self.size
     }
 
@@ -39,7 +40,7 @@ impl<T: std::cmp::PartialOrd + std::fmt::Display> BinarySearchTree<T> {
         self.size += 1;
     }
 
-    fn bst_insert(&mut self, new_leaf: Leaf<T>) {
+    fn bst_insert(&mut self, mut new_leaf: Leaf<T>) {
         let mut cur_idx_option = self.root;
         let mut left_side = false;
 
@@ -66,8 +67,10 @@ impl<T: std::cmp::PartialOrd + std::fmt::Display> BinarySearchTree<T> {
             }
         }
 
+        new_leaf.parent = cur_idx_option;
         let leaf_id = self.nodes.insert(Box::new(new_leaf));
-        println!("Idx: {:?}", leaf_id);
+
+        // Parent node found, so we set it to the corresponding child node
         if let Some(parent_idx) = cur_idx_option {
             let parent = self.nodes.get_mut(parent_idx).unwrap();
 
@@ -77,12 +80,141 @@ impl<T: std::cmp::PartialOrd + std::fmt::Display> BinarySearchTree<T> {
                 parent.right = Some(leaf_id);
             }
         } else {
+            // No parent found, so this leaf must be the root
             self.root = Some(leaf_id);
         }
     }
 
-    pub fn remove(item: &T) -> Result<(), NodeNotFoundErr<T>>{
-        unimplemented!()
+    fn find_node_index(&self, item: &T) -> Option<Index> {
+        let mut cur_node_opt = self.root;
+        while let Some(node_idx) = cur_node_opt {
+            let node = self
+                .nodes
+                .get(node_idx)
+                .expect("Attempted to reference a node which no longer exists");
+
+            if node.data == *item {
+                return Some(node_idx);
+            }
+
+            if *item < node.data {
+                cur_node_opt = node.left;
+            } else {
+                cur_node_opt = node.right;
+            }
+        }
+
+        None
+    }
+
+    fn get_inorder_successor(&self, leaf: &Leaf<T>) -> Option<Index> {
+        // Start with greater node, return smallest node in this sub-tree
+        let mut cur_leaf = leaf.right;
+
+        while let Some(cur_leaf_idx) = cur_leaf {
+            let cur_node = self.nodes.get(cur_leaf_idx).expect("yeet");
+
+            if cur_node.left.is_none() {
+                break;
+            }
+
+            cur_leaf = cur_node.left;
+        }
+
+        cur_leaf
+    }
+
+    pub fn find(&self, item: &T) -> bool {
+        match self.find_node_index(item) {
+            Some(_) => true,
+            None => false,
+        }
+    }
+
+    pub fn remove(&mut self, item: &T) -> Result<(), NodeNotFoundErr> {
+        // Grab larger of 2 nodes, place as root
+        // Then if left node of root exists, set larger node left = root.left, insert orphaned node into sub-tree.
+        // unimplemented!()
+
+        let idx = self
+            .find_node_index(item)
+            .ok_or_else(|| NodeNotFoundErr {})?;
+
+        let node = self.nodes.remove(idx).expect("Yeet");
+
+        let mut replacement_node_idx_opt = None;
+        match (node.left, node.right) {
+            (Some(solo_child_idx), None) | (None, Some(solo_child_idx)) => {
+                replacement_node_idx_opt = Some(solo_child_idx);
+            }
+            // Both children exist, so we must find the inorder successor first
+            (Some(left_child_idx), Some(right_child_idx)) => {
+                replacement_node_idx_opt = self.get_inorder_successor(&node);
+
+                // Replace node with its inorder successor
+                if let Some(successor_idx) = replacement_node_idx_opt {
+                    // Set parent for replacements new child nodes
+                    let mut left_leaf = self.nodes.get_mut(left_child_idx).expect("yeet");
+                    left_leaf.parent = Some(successor_idx);
+
+                    let mut right_leaf = self.nodes.get_mut(right_child_idx).expect("yeet");
+                    right_leaf.parent = Some(successor_idx);
+
+                    let mut successor_leaf = self.nodes.get_mut(successor_idx).expect("yeet");
+                    successor_leaf.left = node.left;
+                    successor_leaf.right = node.right;
+
+                    let successor_parent_opt = successor_leaf.parent;
+                    // If successor's parent exists and is not the node to be
+                    //   removed, we remove the successor node from it
+                    if successor_parent_opt.is_some() && successor_parent_opt != Some(idx) {
+                        let successor_parent_leaf =
+                            self.nodes.get_mut(successor_parent_opt.unwrap()).unwrap();
+
+                        if successor_parent_leaf.left == replacement_node_idx_opt {
+                            successor_parent_leaf.left = None;
+                        } else {
+                            successor_parent_leaf.right = None;
+                        }
+                    }
+                }
+            }
+            // Do nothing because we handle the "leaf" case below
+            (None, None) => {}
+        }
+
+        // update parent node with new replacement child node
+        if let Some(parent_idx) = node.parent {
+            println!(
+                "Setting parent {:?} for {:?} with val {}",
+                node.parent, idx, node.data
+            );
+            let parent = self.nodes.get_mut(parent_idx).expect("yeet");
+            if parent.left == Some(idx) {
+                println!("Right {:?}", replacement_node_idx_opt);
+                parent.left = replacement_node_idx_opt;
+            } else {
+                println!("Left {:?}", replacement_node_idx_opt);
+                parent.right = replacement_node_idx_opt;
+            }
+        }
+
+        // Update replacement node with new parent node
+        if let Some(replacement_node_idx) = replacement_node_idx_opt {
+            let replacement_node = self.nodes.get_mut(replacement_node_idx).expect("yeet");
+            replacement_node.parent = node.parent;
+        }
+
+        // if the removed node was the root, replace it with the replacement node (if there is one)
+        if self.root == Some(idx) {
+            self.root = replacement_node_idx_opt;
+        }
+
+        // All other operations completed successfully, so we nuke the node from our arena
+        self.nodes.remove(idx);
+        self.size = self.size - 1;
+
+        Ok(())
     }
 
     // Create a new iterator w/ a stack for DFS taversal
