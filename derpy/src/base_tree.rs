@@ -34,23 +34,23 @@ pub struct DfsIter<'a, T: Display> {
     pub nodes: &'a Arena<BoxedNode<T>>,
 }
 
-// Iterate through leaves using depth-first traversal
+// Iterate through nodes using depth-first traversal
 impl<'a, T: PartialOrd + Display> Iterator for DfsIter<'a, T> {
     type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let leaf_idx = self.node_idx_stack.pop()?;
-        let cur_leaf = &self.nodes[leaf_idx];
+        let node_idx = self.node_idx_stack.pop()?;
+        let cur_node = &self.nodes[node_idx];
 
-        if let Some(right_leaf_idx) = cur_leaf.right {
-            self.node_idx_stack.push(right_leaf_idx);
+        if let Some(right_node_idx) = cur_node.right {
+            self.node_idx_stack.push(right_node_idx);
         }
 
-        if let Some(left_leaf_idx) = cur_leaf.left {
-            self.node_idx_stack.push(left_leaf_idx);
+        if let Some(left_node_idx) = cur_node.left {
+            self.node_idx_stack.push(left_node_idx);
         }
 
-        Some(&cur_leaf.data)
+        Some(&cur_node.data)
     }
 }
 
@@ -59,27 +59,27 @@ pub struct BfsIter<'a, T: Display> {
     pub nodes: &'a Arena<BoxedNode<T>>,
 }
 
-// Iterate through leaves using breadth-first traversal
+// Iterate through nodes using breadth-first traversal
 impl<'a, T: std::cmp::PartialOrd + std::fmt::Display> Iterator for BfsIter<'a, T> {
     type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let leaf_idx = self.node_idx_queue.pop_front()?;
-        let cur_leaf = &self.nodes[leaf_idx];
+        let node_idx = self.node_idx_queue.pop_front()?;
+        let cur_node = &self.nodes[node_idx];
 
         // println!(
         //     "idx: {:?} val: {} parent: {:?}  left: {:?} right: {:?}",
-        //     leaf_idx, cur_leaf.data, cur_leaf.parent, cur_leaf.left, cur_leaf.right
+        //     node_idx, cur_node.data, cur_node.parent, cur_node.left, cur_node.right
         // );
 
-        if let Some(left_leaf_idx) = cur_leaf.left {
-            self.node_idx_queue.push_back(left_leaf_idx);
+        if let Some(left_node_idx) = cur_node.left {
+            self.node_idx_queue.push_back(left_node_idx);
         }
 
-        if let Some(right_leaf_idx) = cur_leaf.right {
-            self.node_idx_queue.push_back(right_leaf_idx);
+        if let Some(right_node_idx) = cur_node.right {
+            self.node_idx_queue.push_back(right_node_idx);
         }
 
-        Some(&cur_leaf.data)
+        Some(&cur_node.data)
     }
 }

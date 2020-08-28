@@ -51,18 +51,18 @@ pub fn insert_node<T: Display + PartialOrd + Copy>(
 }
 
 pub fn find_node_index<T: Display + PartialOrd + Copy>(tree: &Tree<T>, item: &T) -> Option<Index> {
-    let mut cur_leaf_opt = tree.root;
-    while let Some(node_idx) = cur_leaf_opt {
-        let leaf = &tree.nodes[node_idx];
+    let mut cur_node_opt = tree.root;
+    while let Some(node_idx) = cur_node_opt {
+        let node = &tree.nodes[node_idx];
 
-        if leaf.data == *item {
+        if node.data == *item {
             return Some(node_idx);
         }
 
-        if *item < leaf.data {
-            cur_leaf_opt = leaf.left;
+        if *item < node.data {
+            cur_node_opt = node.left;
         } else {
-            cur_leaf_opt = leaf.right;
+            cur_node_opt = node.right;
         }
     }
 
@@ -131,7 +131,7 @@ pub fn remove_node<T: Display + PartialOrd + Copy>(tree: &mut Tree<T>, node_idx:
         (None, None) => {}
     }
 
-    // Handles removing leaves & relinking leaves with a single child
+    // Handles removing leaves & relinking nodes with a single child
     if !recursive_remove {
         if let Some(parent_idx) = parent_opt {
             let parent_node = &mut tree.nodes[parent_idx];
