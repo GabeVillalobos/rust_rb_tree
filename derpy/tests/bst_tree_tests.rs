@@ -118,24 +118,29 @@ fn remove_node() {
     assert_eq!(b_tree.remove(&12).is_err(), true);
 
     println!("Remove a leaf node");
-    assert_eq!(b_tree.remove(&44).is_ok(), true);
+    assert_eq!(b_tree.remove(&43).is_ok(), true);
 
-    let mut expected_order = vec![55, 42, 88, 43, 66, 99, 65, 97, 100];
+    let mut expected_order = vec![55, 42, 88, 44, 66, 99, 65, 97, 100];
     verify_tree_bfs(&mut b_tree, expected_order);
 
     println!("Remove a node with a single leaf");
     assert_eq!(b_tree.remove(&42).is_ok(), true);
-    expected_order = vec![55, 43, 88, 66, 99, 65, 97, 100];
+    expected_order = vec![55, 44, 88, 66, 99, 65, 97, 100];
     verify_tree_bfs(&mut b_tree, expected_order);
 
     println!("Remove a node with multiple leaves");
     assert_eq!(b_tree.remove(&88).is_ok(), true);
-    expected_order = vec![55, 43, 97, 66, 99, 65, 100];
+    expected_order = vec![55, 44, 97, 66, 99, 65, 100];
     verify_tree_bfs(&mut b_tree, expected_order);
 
     println!("Remove root node with multiple leaves");
     assert_eq!(b_tree.remove(&55).is_ok(), true);
-    expected_order = vec![65, 43, 97, 66, 99, 100];
+    expected_order = vec![65, 44, 97, 66, 99, 100];
+    verify_tree_bfs(&mut b_tree, expected_order);
+
+    println!("Remove node with 2 children, without an inorder successor");
+    assert_eq!(b_tree.remove(&97).is_ok(), true);
+    expected_order = vec![65, 44, 99, 66, 100];
     verify_tree_bfs(&mut b_tree, expected_order);
 }
 

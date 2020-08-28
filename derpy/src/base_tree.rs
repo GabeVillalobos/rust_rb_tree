@@ -12,6 +12,23 @@ pub struct Leaf<T: Display> {
 
 pub type Node<T> = Box<Leaf<T>>;
 
+#[derive(Default)]
+pub struct Tree<T: Display + PartialOrd + Copy> {
+    pub root: Option<Index>,
+    pub size: usize,
+    pub nodes: Arena<Node<T>>,
+}
+
+impl<T: Display + PartialOrd + Copy> Tree<T> {
+    pub fn new() -> Self {
+        Tree {
+            root: None,
+            size: 0,
+            nodes: Arena::new(),
+        }
+    }
+}
+
 pub struct DfsIter<'a, T: Display> {
     pub leaf_idx_stack: Vec<Index>,
     pub nodes: &'a Arena<Node<T>>,
