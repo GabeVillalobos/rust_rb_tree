@@ -15,5 +15,3 @@ fn main() {
         println!("{}", leaf_val);
     }
 }
-
-

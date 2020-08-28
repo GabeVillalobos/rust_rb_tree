@@ -99,8 +99,8 @@ pub fn get_inorder_successor<T: Display + PartialOrd + Copy>(
 //  successor is removed recursively.
 pub fn remove_node<T: Display + PartialOrd + Copy>(tree: &mut Tree<T>, node_idx: Index) {
     let mut replacement_idx_opt = None;
-    let mut recurisve_remove = false;
-    
+    let mut recursive_remove = false;
+
     let node_to_remove = &tree.nodes[node_idx];
     // Grab the parent index, in case we need it later
     let parent_opt = node_to_remove.parent;
@@ -122,7 +122,7 @@ pub fn remove_node<T: Display + PartialOrd + Copy>(tree: &mut Tree<T>, node_idx:
             let old_node = &mut tree.nodes[node_idx];
             old_node.data = successor_data;
 
-            recurisve_remove = true;
+            recursive_remove = true;
 
             remove_node(tree, successor_idx);
         }
@@ -132,7 +132,7 @@ pub fn remove_node<T: Display + PartialOrd + Copy>(tree: &mut Tree<T>, node_idx:
     }
 
     // Handles removing leaves & relinking leaves with a single child
-    if !recurisve_remove {
+    if !recursive_remove {
         if let Some(parent_idx) = parent_opt {
             let parent_node = &mut tree.nodes[parent_idx];
 

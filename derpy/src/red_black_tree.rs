@@ -3,7 +3,7 @@ use generational_arena::Index;
 use std::collections::{HashMap, VecDeque};
 
 use super::base_tree::{BfsIter, DfsIter, Node, Tree};
-use super::binary_search_tree_helpers::{insert_node, remove_node, find_node_index};
+use super::binary_search_tree_helpers::{find_node_index, insert_node, remove_node};
 use super::tree_errs::NodeNotFoundErr;
 
 use std::cmp::PartialOrd;
