@@ -1,24 +1,25 @@
 extern crate generational_arena;
 use super::base_tree::{BfsIter, DfsIter, Leaf, Tree};
-use super::binary_search_tree_helpers::{insert_leaf, remove_leaf, find_node_index};
 use super::tree_errs::NodeNotFoundErr;
 
 use std::cmp::PartialOrd;
 use std::collections::VecDeque;
 use std::fmt::Display;
 
+// Public class that wraps the internal Binary Search Tree impl without
+//   leaking any abstractions.
 #[derive(Default)]
-pub struct BinarySearchTree<T: PartialOrd + Display + Copy> {
+pub struct BinarySearchTree<T: PartialOrd + Display + Default> {
     tree: Tree<T>,
 }
 
-impl<T: PartialOrd + Display + Copy> BinarySearchTree<T> {
+impl<T: PartialOrd + Display + Default> BinarySearchTree<T> {
     pub fn new() -> Self {
         BinarySearchTree { tree: Tree::new() }
     }
 
     pub fn get_size(&self) -> usize {
-        self.tree.size
+        self.tree.nodes.len()
     }
 
     pub fn insert(&mut self, val: T) {
@@ -29,17 +30,16 @@ impl<T: PartialOrd + Display + Copy> BinarySearchTree<T> {
             parent: None,
         };
 
-        insert_leaf(&mut self.tree, new_leaf);
-        self.tree.size += 1;
+        self.tree.insert_leaf(new_leaf);
     }
 
     pub fn contains(&self, item: &T) -> bool {
-        find_node_index(&self.tree, item).is_some()
+        self.tree.find_node_index(item).is_some()
     }
 
     pub fn remove(&mut self, item: &T) -> Result<(), NodeNotFoundErr> {
-        let leaf_idx_to_remove = find_node_index(&self.tree, item).ok_or(NodeNotFoundErr)?;
-        remove_leaf(&mut self.tree, leaf_idx_to_remove);
+        let leaf_idx_to_remove = self.tree.find_node_index(item).ok_or(NodeNotFoundErr)?;
+        self.tree.remove_leaf(leaf_idx_to_remove);
 
         Ok(())
     }

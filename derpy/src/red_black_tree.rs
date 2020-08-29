@@ -3,14 +3,13 @@ use generational_arena::Index;
 use std::collections::{HashMap, VecDeque};
 
 use super::base_tree::{BfsIter, DfsIter, Leaf, Tree};
-use super::binary_search_tree_helpers::{insert_leaf, remove_leaf, find_node_index};
 use super::tree_errs::NodeNotFoundErr;
 
 use std::cmp::PartialOrd;
 use std::fmt::Display;
 
 #[derive(Default)]
-pub struct RedBlackTree<T: PartialOrd + Display + Copy> {
+pub struct RedBlackTree<T: PartialOrd + Display + Default> {
     bst: Tree<T>,
     colors: HashMap<Index, TreeColors>,
 }
@@ -27,7 +26,7 @@ impl Default for TreeColors {
     }
 }
 
-impl<T: PartialOrd + Display + Copy> RedBlackTree<T> {
+impl<T: PartialOrd + Display + Default> RedBlackTree<T> {
     pub fn new() -> Self {
         RedBlackTree {
             bst: Tree::new(),
@@ -36,7 +35,7 @@ impl<T: PartialOrd + Display + Copy> RedBlackTree<T> {
     }
 
     pub fn get_size(&self) -> usize {
-        self.bst.size
+        self.bst.nodes.len()
     }
 
     pub fn insert(&mut self, item: T) {
@@ -47,12 +46,12 @@ impl<T: PartialOrd + Display + Copy> RedBlackTree<T> {
             parent: None,
         };
 
-        insert_leaf(&mut self.bst, leaf);
+        self.bst.insert_leaf(leaf);
     }
 
     pub fn remove(&mut self, item: &T) -> Result<(), NodeNotFoundErr> {
-        let leaf_idx_to_remove = find_node_index(&self.bst, item).ok_or(NodeNotFoundErr)?;
-        remove_leaf(&mut self.bst, leaf_idx_to_remove);
+        let leaf_idx_to_remove = self.bst.find_node_index(item).ok_or(NodeNotFoundErr)?;
+        self.bst.remove_leaf(leaf_idx_to_remove);
         Ok(())
     }
 
