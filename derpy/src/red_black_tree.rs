@@ -1,7 +1,7 @@
 use generational_arena::Index;
 use std::collections::{HashMap, VecDeque};
 
-use super::base_tree::{BfsIter, DfsIter, Node, InternalBinarySearchTree};
+use super::base_tree::{BfsIter, DfsIter, InternalBinarySearchTree, Node};
 use super::tree_errs::NodeNotFoundErr;
 
 use std::cmp::PartialOrd;
@@ -13,7 +13,7 @@ pub struct RedBlackTree<T: PartialOrd + Display + Default> {
     colors: HashMap<Index, TreeColors>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub(crate) enum TreeColors {
     Red,
     Black,
@@ -45,7 +45,94 @@ impl<T: PartialOrd + Display + Default> RedBlackTree<T> {
             parent: None,
         };
 
-        self.bst.insert_node(leaf);
+        let new_leaf_idx = Some(self.bst.insert_node(leaf));
+        self.set_node_color(new_leaf_idx, TreeColors::Red);
+        self.recolor_nodes(new_leaf_idx);
+    }
+
+    fn recolor_nodes(&mut self, node_idx_opt: Option<Index>) {
+        if node_idx_opt.is_none() {
+            return;
+        }
+
+        // if node is root, color it black then return. Tree has been recolors successfully
+        if self.bst.root == node_idx_opt {
+            self.set_node_color(node_idx_opt, TreeColors::Black);
+            return;
+        }
+
+        let parent_idx_opt = self.bst.nodes[node_idx_opt.unwrap()].parent;
+
+        // parent color is black, no need to continue
+        if self.get_node_color(parent_idx_opt) == TreeColors::Black {
+            return;
+        }
+
+        let mut grandparent_idx_opt = None;
+        let mut uncle_idx_opt = None;
+        let mut parent_is_left_child = false;
+
+        if let Some(parent_idx) = parent_idx_opt {
+            let gramps = &self.bst.nodes[parent_idx];
+            grandparent_idx_opt = gramps.parent;
+
+            uncle_idx_opt = if gramps.left == parent_idx_opt {
+                parent_is_left_child = true;
+                gramps.right
+            } else {
+                gramps.left
+            }
+        }
+
+        match self.get_node_color(uncle_idx_opt) {
+            TreeColors::Red => {
+                // simplest case: recolor and recurse, coloring the grandparent
+                self.set_node_color(grandparent_idx_opt, TreeColors::Red);
+                self.set_node_color(uncle_idx_opt, TreeColors::Black);
+                self.set_node_color(parent_idx_opt, TreeColors::Black);
+                self.recolor_nodes(grandparent_idx_opt);
+            }
+            TreeColors::Black => {
+                // grandparent doesn't exist, so we're done
+                if grandparent_idx_opt.is_none() {
+                    return;
+                }
+                let grandparent_idx = grandparent_idx_opt.unwrap();
+                let node_is_left_child =
+                    self.bst.nodes[parent_idx_opt.unwrap()].left == node_idx_opt;
+                // 4 possible cases here:
+                match (parent_is_left_child, node_is_left_child) {
+                    // 1: parent is left child, node is left child
+                    (true, true) => {},
+                    // 2: parent is left child, node is right child
+                    (true, false) => {},
+                    // 3: mirror of 1
+                    (false, true) => {},
+                    // 5: mirror of 2
+                    (false, false) => {},
+                }
+            }
+        };
+    }
+
+    fn get_node_color(&self, node_opt: Option<Index>) -> TreeColors {
+        if let Some(node_idx) = node_opt {
+            self.colors[&node_idx]
+        } else {
+            // Terminating nodes are black in color by default
+            TreeColors::Black
+        }
+    }
+
+    fn set_node_color(&mut self, node_idx_opt: Option<Index>, color: TreeColors) {
+        if let Some(node_idx) = node_idx_opt {
+            self.colors.insert(node_idx, color);
+        } else if color == TreeColors::Red {
+            panic!(
+                "Proper tree structure ensures that recoloring a terminating node red cannot occur"
+            );
+        }
+        // Terminating nodes are already black, so do nothing
     }
 
     pub fn remove(&mut self, item: &T) -> Result<(), NodeNotFoundErr> {
