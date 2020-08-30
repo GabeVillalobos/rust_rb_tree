@@ -1,8 +1,7 @@
-extern crate generational_arena;
 use generational_arena::Index;
 use std::collections::{HashMap, VecDeque};
 
-use super::base_tree::{BfsIter, DfsIter, Node, Tree};
+use super::base_tree::{BfsIter, DfsIter, Node, InternalBinarySearchTree};
 use super::tree_errs::NodeNotFoundErr;
 
 use std::cmp::PartialOrd;
@@ -10,7 +9,7 @@ use std::fmt::Display;
 
 #[derive(Default)]
 pub struct RedBlackTree<T: PartialOrd + Display + Default> {
-    bst: Tree<T>,
+    bst: InternalBinarySearchTree<T>,
     colors: HashMap<Index, TreeColors>,
 }
 
@@ -29,7 +28,7 @@ impl Default for TreeColors {
 impl<T: PartialOrd + Display + Default> RedBlackTree<T> {
     pub fn new() -> Self {
         RedBlackTree {
-            bst: Tree::new(),
+            bst: InternalBinarySearchTree::new(),
             colors: HashMap::new(),
         }
     }

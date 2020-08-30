@@ -1,5 +1,4 @@
-extern crate generational_arena;
-use super::base_tree::{BfsIter, DfsIter, Node, Tree};
+use super::base_tree::{BfsIter, DfsIter, InternalBinarySearchTree, Node};
 use super::tree_errs::NodeNotFoundErr;
 
 use std::cmp::PartialOrd;
@@ -10,16 +9,18 @@ use std::fmt::Display;
 //   leaking any abstractions.
 #[derive(Default)]
 pub struct BinarySearchTree<T: PartialOrd + Display + Default> {
-    tree: Tree<T>,
+    bst: InternalBinarySearchTree<T>,
 }
 
 impl<T: PartialOrd + Display + Default> BinarySearchTree<T> {
     pub fn new() -> Self {
-        BinarySearchTree { tree: Tree::new() }
+        BinarySearchTree {
+            bst: InternalBinarySearchTree::new(),
+        }
     }
 
     pub fn get_size(&self) -> usize {
-        self.tree.nodes.len()
+        self.bst.nodes.len()
     }
 
     pub fn insert(&mut self, val: T) {
@@ -30,16 +31,16 @@ impl<T: PartialOrd + Display + Default> BinarySearchTree<T> {
             parent: None,
         };
 
-        self.tree.insert_node(new_leaf);
+        self.bst.insert_node(new_leaf);
     }
 
     pub fn contains(&self, item: &T) -> bool {
-        self.tree.find_node_index(item).is_some()
+        self.bst.find_node_index(item).is_some()
     }
 
     pub fn remove(&mut self, item: &T) -> Result<(), NodeNotFoundErr> {
-        let node_idx_to_remove = self.tree.find_node_index(item).ok_or(NodeNotFoundErr)?;
-        self.tree.remove_node(node_idx_to_remove);
+        let node_idx_to_remove = self.bst.find_node_index(item).ok_or(NodeNotFoundErr)?;
+        self.bst.remove_node(node_idx_to_remove);
 
         Ok(())
     }
@@ -48,13 +49,13 @@ impl<T: PartialOrd + Display + Default> BinarySearchTree<T> {
     pub fn dfs_iter(&mut self) -> DfsIter<T> {
         let mut node_idx_stack = Vec::new();
 
-        if let Some(root_idx) = self.tree.root {
+        if let Some(root_idx) = self.bst.root {
             node_idx_stack.push(root_idx);
         }
 
         DfsIter {
             node_idx_stack,
-            nodes: &self.tree.nodes,
+            nodes: &self.bst.nodes,
         }
     }
 
@@ -62,13 +63,13 @@ impl<T: PartialOrd + Display + Default> BinarySearchTree<T> {
     pub fn bfs_iter(&mut self) -> BfsIter<T> {
         let mut node_idx_queue = VecDeque::new();
 
-        if let Some(root_idx) = self.tree.root {
+        if let Some(root_idx) = self.bst.root {
             node_idx_queue.push_front(root_idx);
         }
 
         BfsIter {
             node_idx_queue,
-            nodes: &self.tree.nodes,
+            nodes: &self.bst.nodes,
         }
     }
 }

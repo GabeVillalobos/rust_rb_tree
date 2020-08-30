@@ -14,16 +14,16 @@ pub struct Node<T: Display> {
 pub type BoxedNode<T> = Box<Node<T>>;
 
 #[derive(Default)]
-pub struct Tree<T: Display + PartialOrd + Default> {
+pub struct InternalBinarySearchTree<T: Display + PartialOrd + Default> {
     pub root: Option<Index>,
     pub nodes: Arena<BoxedNode<T>>,
 }
 
 // The copy trait facilitates easier node removal by allowing us to
 //  copy the contents of
-impl<T: Display + PartialOrd + Default> Tree<T> {
+impl<T: Display + PartialOrd + Default> InternalBinarySearchTree<T> {
     pub fn new() -> Self {
-        Tree {
+        InternalBinarySearchTree {
             root: None,
             nodes: Arena::new(),
         }
