@@ -2,10 +2,23 @@ extern crate derpy;
 use derpy::binary_search_tree::BinarySearchTree;
 
 fn verify_tree_bfs(bst: &mut BinarySearchTree<i32>, expected_vals: Vec<i32>) {
-    assert_eq!(bst.get_size(), expected_vals.len());
+    assert!(
+        bst.get_size() == expected_vals.len(),
+        "Expected tree size to be {}, but it was {}",
+        expected_vals.len(),
+        bst.get_size()
+    );
+
     let mut b_tree_iter = bst.bfs_iter();
     for val in expected_vals {
-        assert_eq!(b_tree_iter.next(), Some(&val));
+        let node = b_tree_iter.next();
+
+        assert!(
+            node == Some(&val),
+            "Expected node to be {:?}, but it was {:?}",
+            Some(&val),
+            node
+        );
     }
     assert_eq!(b_tree_iter.next(), None);
 }
@@ -118,24 +131,41 @@ fn remove_node() {
     assert_eq!(b_tree.remove(&12).is_err(), true);
 
     println!("Remove a leaf node");
-    assert_eq!(b_tree.remove(&44).is_ok(), true);
+    assert_eq!(b_tree.remove(&43).is_ok(), true);
 
-    let mut expected_order = vec![55, 42, 88, 43, 66, 99, 65, 97, 100];
+    let mut expected_order = vec![55, 42, 88, 44, 66, 99, 65, 97, 100];
     verify_tree_bfs(&mut b_tree, expected_order);
 
     println!("Remove a node with a single leaf");
     assert_eq!(b_tree.remove(&42).is_ok(), true);
-    expected_order = vec![55, 43, 88, 66, 99, 65, 97, 100];
+    expected_order = vec![55, 44, 88, 66, 99, 65, 97, 100];
     verify_tree_bfs(&mut b_tree, expected_order);
 
     println!("Remove a node with multiple leaves");
     assert_eq!(b_tree.remove(&88).is_ok(), true);
-    expected_order = vec![55, 43, 97, 66, 99, 65, 100];
+    expected_order = vec![55, 44, 97, 66, 99, 65, 100];
     verify_tree_bfs(&mut b_tree, expected_order);
 
     println!("Remove root node with multiple leaves");
     assert_eq!(b_tree.remove(&55).is_ok(), true);
-    expected_order = vec![65, 43, 97, 66, 99, 100];
+    expected_order = vec![65, 44, 97, 66, 99, 100];
+    verify_tree_bfs(&mut b_tree, expected_order);
+
+    println!("Remove node with 2 children, without an inorder successor");
+    assert_eq!(b_tree.remove(&97).is_ok(), true);
+    expected_order = vec![65, 44, 99, 66, 100];
+    verify_tree_bfs(&mut b_tree, expected_order);
+
+    println!("Remove node with inorder successor with right subtree");
+    b_tree.insert(110);
+    b_tree.insert(109);
+
+    // Verify that the tree is as we expect before testing
+    expected_order = vec![65, 44, 99, 66, 100, 110, 109];
+    verify_tree_bfs(&mut b_tree, expected_order);
+
+    assert_eq!(b_tree.remove(&99).is_ok(), true);
+    expected_order = vec![65, 44, 100, 66, 110, 109];
     verify_tree_bfs(&mut b_tree, expected_order);
 }
 
