@@ -1,5 +1,4 @@
-extern crate generational_arena;
-use super::base_tree::{BfsIter, DfsIter, Leaf, Tree};
+use super::base_tree::{BfsIter, DfsIter, InternalBinarySearchTree, Node};
 use super::tree_errs::NodeNotFoundErr;
 
 use std::cmp::PartialOrd;
@@ -10,65 +9,67 @@ use std::fmt::Display;
 //   leaking any abstractions.
 #[derive(Default)]
 pub struct BinarySearchTree<T: PartialOrd + Display + Default> {
-    tree: Tree<T>,
+    bst: InternalBinarySearchTree<T>,
 }
 
 impl<T: PartialOrd + Display + Default> BinarySearchTree<T> {
     pub fn new() -> Self {
-        BinarySearchTree { tree: Tree::new() }
+        BinarySearchTree {
+            bst: InternalBinarySearchTree::new(),
+        }
     }
 
     pub fn get_size(&self) -> usize {
-        self.tree.nodes.len()
+        self.bst.nodes.len()
     }
 
     pub fn insert(&mut self, val: T) {
-        let new_leaf = Leaf {
+        let new_leaf = Node {
             data: val,
             left: None,
             right: None,
             parent: None,
         };
 
-        self.tree.insert_leaf(new_leaf);
+        self.bst.insert_node(new_leaf);
     }
 
     pub fn contains(&self, item: &T) -> bool {
-        self.tree.find_node_index(item).is_some()
+        self.bst.find_node_index(item).is_some()
     }
 
     pub fn remove(&mut self, item: &T) -> Result<(), NodeNotFoundErr> {
-        let leaf_idx_to_remove = self.tree.find_node_index(item).ok_or(NodeNotFoundErr)?;
-        self.tree.remove_leaf(leaf_idx_to_remove);
+        let node_idx_to_remove = self.bst.find_node_index(item).ok_or(NodeNotFoundErr)?;
+        self.bst.remove_node(node_idx_to_remove);
 
         Ok(())
     }
 
     // Create a new iterator w/ a stack for DFS taversal
     pub fn dfs_iter(&mut self) -> DfsIter<T> {
-        let mut leaf_idx_stack = Vec::new();
+        let mut node_idx_stack = Vec::new();
 
-        if let Some(root_idx) = self.tree.root {
-            leaf_idx_stack.push(root_idx);
+        if let Some(root_idx) = self.bst.root {
+            node_idx_stack.push(root_idx);
         }
 
         DfsIter {
-            leaf_idx_stack,
-            nodes: &self.tree.nodes,
+            node_idx_stack,
+            nodes: &self.bst.nodes,
         }
     }
 
     // Create a new iterator w/ a queue for BFS traversal
     pub fn bfs_iter(&mut self) -> BfsIter<T> {
-        let mut leaf_idx_queue = VecDeque::new();
+        let mut node_idx_queue = VecDeque::new();
 
-        if let Some(root_idx) = self.tree.root {
-            leaf_idx_queue.push_front(root_idx);
+        if let Some(root_idx) = self.bst.root {
+            node_idx_queue.push_front(root_idx);
         }
 
         BfsIter {
-            leaf_idx_queue,
-            nodes: &self.tree.nodes,
+            node_idx_queue,
+            nodes: &self.bst.nodes,
         }
     }
 }

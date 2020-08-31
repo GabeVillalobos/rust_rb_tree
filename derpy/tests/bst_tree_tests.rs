@@ -1,4 +1,3 @@
-extern crate derpy;
 use derpy::binary_search_tree::BinarySearchTree;
 
 fn verify_tree_bfs(bst: &mut BinarySearchTree<i32>, expected_vals: Vec<i32>) {
