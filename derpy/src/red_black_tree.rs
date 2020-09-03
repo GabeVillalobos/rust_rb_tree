@@ -57,7 +57,7 @@ impl<T: PartialOrd + Display + Default> RedBlackTree<T> {
 
         let node_idx = node_idx_opt.unwrap();
 
-        // if node is root, color it black then return. Tree has been recolored successfully
+        // If node is root, color it black then return. Tree has been recolored successfully
         if self.bst.root == node_idx_opt {
             self.set_node_color(node_idx_opt, TreeColors::Black);
             return;
@@ -65,8 +65,11 @@ impl<T: PartialOrd + Display + Default> RedBlackTree<T> {
 
         let mut parent_idx_opt = self.bst.nodes[node_idx].parent;
 
-        // parent color is black, no need to continue
-        if self.get_node_color(parent_idx_opt) == TreeColors::Black {
+        // Parent or current node color is black, which means that the
+        //  RB-property has been upheld
+        if self.get_node_color(parent_idx_opt) == TreeColors::Black
+            || self.get_node_color(node_idx_opt) == TreeColors::Black
+        {
             return;
         }
 
@@ -87,7 +90,7 @@ impl<T: PartialOrd + Display + Default> RedBlackTree<T> {
 
         match self.get_node_color(uncle_idx_opt) {
             TreeColors::Red => {
-                // simplest case: recolor and recurse, coloring the grandparent
+                // Simplest case: 'push' black color from grandparent down to its children
                 self.set_node_color(grandparent_idx_opt, TreeColors::Red);
                 self.set_node_color(uncle_idx_opt, TreeColors::Black);
                 self.set_node_color(parent_idx_opt, TreeColors::Black);
@@ -271,6 +274,7 @@ impl<T: PartialOrd + Display + Default> RedBlackTree<T> {
         }
     }
 
+    // Private method for printing node diagnostic data
     fn print_node(&self, node_idx: Index) {
         let node = &self.bst.nodes[node_idx];
         println!(
@@ -284,6 +288,7 @@ impl<T: PartialOrd + Display + Default> RedBlackTree<T> {
         );
     }
 
+    // Simple BFS traversing method that prints each node's information for diagnostic purposes
     pub fn print_tree(&mut self) {
         let mut nodes = VecDeque::new();
         nodes.push_front(self.bst.root);
