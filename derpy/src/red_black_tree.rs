@@ -55,34 +55,35 @@ impl<T: PartialOrd + Display + Default> RedBlackTree<T> {
             return;
         }
 
-        // if node is root, color it black then return. Tree has been recolors successfully
+        let node_idx = node_idx_opt.unwrap();
+
+        // if node is root, color it black then return. Tree has been recolored successfully
         if self.bst.root == node_idx_opt {
             self.set_node_color(node_idx_opt, TreeColors::Black);
             return;
         }
 
-        let parent_idx_opt = self.bst.nodes[node_idx_opt.unwrap()].parent;
+        let mut parent_idx_opt = self.bst.nodes[node_idx].parent;
 
         // parent color is black, no need to continue
         if self.get_node_color(parent_idx_opt) == TreeColors::Black {
             return;
         }
 
-        let mut grandparent_idx_opt = None;
-        let mut uncle_idx_opt = None;
+        let parent_idx = parent_idx_opt.unwrap();
+        let grandparent_idx_opt = self.bst.nodes[parent_idx].parent;
+        let grandparent_idx = grandparent_idx_opt
+            .expect("Proper tree coloring ensures that a grandparent exists when checking uncle node colors");
+
+        let grandparent_node = &self.bst.nodes[grandparent_idx];
+
         let mut parent_is_left_child = false;
-
-        if let Some(parent_idx) = parent_idx_opt {
-            let gramps = &self.bst.nodes[parent_idx];
-            grandparent_idx_opt = gramps.parent;
-
-            uncle_idx_opt = if gramps.left == parent_idx_opt {
-                parent_is_left_child = true;
-                gramps.right
-            } else {
-                gramps.left
-            }
-        }
+        let uncle_idx_opt = if grandparent_node.left == parent_idx_opt {
+            parent_is_left_child = true;
+            grandparent_node.right
+        } else {
+            grandparent_node.left
+        };
 
         match self.get_node_color(uncle_idx_opt) {
             TreeColors::Red => {
@@ -90,35 +91,31 @@ impl<T: PartialOrd + Display + Default> RedBlackTree<T> {
                 self.set_node_color(grandparent_idx_opt, TreeColors::Red);
                 self.set_node_color(uncle_idx_opt, TreeColors::Black);
                 self.set_node_color(parent_idx_opt, TreeColors::Black);
-                self.recolor_nodes(grandparent_idx_opt);
             }
             TreeColors::Black => {
-                // grandparent doesn't exist, so we're done
-                if grandparent_idx_opt.is_none() {
-                    return;
-                }
-
                 let node_is_left_child =
                     self.bst.nodes[parent_idx_opt.unwrap()].left == node_idx_opt;
                 // 4 possible cases here:
                 match (parent_is_left_child, node_is_left_child) {
                     // 1: parent is left child, node is left child
                     (true, true) => {
-                        self.rotate_node_right(parent_idx_opt.unwrap());
+                        self.rotate_node_right(parent_idx);
                     }
                     // 2: parent is left child, node is right child
                     (true, false) => {
-                        self.rotate_node_left(node_idx_opt.unwrap());
-                        self.rotate_node_right(parent_idx_opt.unwrap());
+                        self.rotate_node_left(node_idx);
+                        self.rotate_node_right(node_idx);
+                        parent_idx_opt = node_idx_opt;
                     }
-                    // 3: mirror of 1
+                    // 3: mirror of 2
                     (false, true) => {
-                        self.rotate_node_left(parent_idx_opt.unwrap());
+                        self.rotate_node_right(node_idx);
+                        self.rotate_node_left(node_idx);
+                        parent_idx_opt = node_idx_opt;
                     }
-                    // 5: mirror of 2
+                    // 5: mirror of 1
                     (false, false) => {
-                        self.rotate_node_right(node_idx_opt.unwrap());
-                        self.rotate_node_left(parent_idx_opt.unwrap());
+                        self.rotate_node_left(parent_idx);
                     }
                 }
 
@@ -130,51 +127,79 @@ impl<T: PartialOrd + Display + Default> RedBlackTree<T> {
                 self.set_node_color(grandparent_idx_opt, parent_color);
             }
         };
+
+        self.recolor_nodes(grandparent_idx_opt);
     }
 
-    // When rotating a node, we set the parent's right child equal to the
-    //  target node's left child. Then we set the parent as the left child
+    // When rotating a node right, we set the parent's left child equal to the
+    //  target node's right child. Then we set the parent as the right child
     //  of the target. Finally we fix all of the parent references, et voila.
     fn rotate_node_right(&mut self, node_idx: Index) {
         let node = &mut self.bst.nodes[node_idx];
-        let parent_idx = node
-            .parent
-            .expect("Proper tree structure ensures that a occurs only on nodes with parents");
+        let parent_idx = node.parent.expect(
+            "Proper tree structure ensures that a rotation occurs only on nodes with parents",
+        );
+
+        // Make parent node a child of the rotating node
+        let right_node_idx_opt = node.right;
+        node.right = Some(parent_idx);
+
+        // Make parent node a child of the rotating node
+        let parent_node = &mut self.bst.nodes[parent_idx];
+        let grandparent_idx_opt = parent_node.parent;
+
+        // Update parent's 'parent' and 'left' children accordingly
+        parent_node.parent = Some(node_idx);
+        parent_node.left = right_node_idx_opt;
+
+        // Update right child node with new parent idx
+        if let Some(right_node_idx) = right_node_idx_opt {
+            let right_node = &mut self.bst.nodes[right_node_idx];
+            right_node.parent = Some(parent_idx);
+        }
+
+        // Set node's parent to the grandparent
+        self.bst.nodes[node_idx].parent = grandparent_idx_opt;
+
+        // If grandparent exists, we replace its child idx with the parent with the target node
+        if let Some(grandparent_idx) = grandparent_idx_opt {
+            let grandparent_node = &mut self.bst.nodes[grandparent_idx];
+            if grandparent_node.left == Some(parent_idx) {
+                grandparent_node.left = Some(node_idx);
+            } else {
+                grandparent_node.right = Some(node_idx);
+            }
+        } else {
+            self.bst.root = Some(node_idx);
+        }
+    }
+
+    // When rotating a node left, we set the parent's right child equal to the
+    //  target node's left child. Then we set the parent as the left child
+    //  of the target. Finally we fix all of the parent references, et voila.
+    fn rotate_node_left(&mut self, node_idx: Index) {
+        let node = &mut self.bst.nodes[node_idx];
+        let parent_idx = node.parent.expect(
+            "Proper tree structure ensures that a rotation occurs only on nodes with parents",
+        );
+
         let left_node_idx_opt = node.left;
         node.left = Some(parent_idx);
 
         let parent_node = &mut self.bst.nodes[parent_idx];
+        let grandparent_idx_opt = parent_node.parent;
+
+        // Update parent's 'parent' and 'left' children accordingly
         parent_node.parent = Some(node_idx);
         parent_node.right = left_node_idx_opt;
 
-        let grandparent_idx_opt = parent_node.parent;
-        self.bst.nodes[node_idx].parent = grandparent_idx_opt;
-
-        // If grandparent exists, we replace its child idx with the parent with the target node
-        if let Some(grandparent_idx) = grandparent_idx_opt {
-            let grandparent_node = &mut self.bst.nodes[grandparent_idx];
-            if grandparent_node.left == Some(parent_idx) {
-                grandparent_node.left = Some(node_idx);
-            } else {
-                grandparent_node.right = Some(node_idx);
-            }
+        // If rotating node had a left child, update its parent index
+        if let Some(left_node_idx) = left_node_idx_opt {
+            let left_node = &mut self.bst.nodes[left_node_idx];
+            left_node.parent = Some(parent_idx);
         }
-    }
 
-    fn rotate_node_left(&mut self, node_idx: Index) {
-        let node = &mut self.bst.nodes[node_idx];
-        let parent_idx = node
-            .parent
-            .expect("Proper tree structure ensures that a occurs only on nodes with parents");
-
-        let right_node_idx_opt = node.right;
-        node.right = Some(parent_idx);
-
-        let parent_node = &mut self.bst.nodes[parent_idx];
-        parent_node.parent = Some(node_idx);
-        parent_node.left = right_node_idx_opt;
-
-        let grandparent_idx_opt = parent_node.parent;
+        // Set node's parent to the grandparent
         self.bst.nodes[node_idx].parent = grandparent_idx_opt;
 
         // If grandparent exists, we replace its child idx with the parent with the target node
@@ -185,6 +210,8 @@ impl<T: PartialOrd + Display + Default> RedBlackTree<T> {
             } else {
                 grandparent_node.right = Some(node_idx);
             }
+        } else {
+            self.bst.root = Some(node_idx);
         }
     }
 
@@ -208,10 +235,12 @@ impl<T: PartialOrd + Display + Default> RedBlackTree<T> {
         // Terminating nodes are already black, so do nothing
     }
 
+    pub fn contains(&self, item: &T) -> bool {
+        self.bst.find_node_index(item).is_some()
+    }
+
     pub fn remove(&mut self, item: &T) -> Result<(), NodeNotFoundErr> {
-        let node_idx_to_remove = self.bst.find_node_index(item).ok_or(NodeNotFoundErr)?;
-        self.bst.remove_node(node_idx_to_remove);
-        Ok(())
+        unimplemented!();
     }
 
     // Create a new iterator w/ a stack for DFS taversal
@@ -239,6 +268,37 @@ impl<T: PartialOrd + Display + Default> RedBlackTree<T> {
         BfsIter {
             node_idx_queue,
             nodes: &self.bst.nodes,
+        }
+    }
+
+    fn print_node(&self, node_idx: Index) {
+        let node = &self.bst.nodes[node_idx];
+        println!(
+            "I: {:?}, C:{:?}, Data: {}, L: {:?}, R: {:?}, P: {:?}",
+            node_idx,
+            self.colors.get(&node_idx),
+            node.data,
+            node.left,
+            node.right,
+            node.parent
+        );
+    }
+
+    pub fn print_tree(&mut self) {
+        let mut nodes = VecDeque::new();
+        nodes.push_front(self.bst.root);
+        while let Some(node_idx_opt) = nodes.pop_front() {
+            let node_idx = node_idx_opt.unwrap();
+            self.print_node(node_idx);
+            let node = &self.bst.nodes[node_idx];
+
+            if node.left.is_some() {
+                nodes.push_back(node.left);
+            }
+
+            if node.right.is_some() {
+                nodes.push_back(node.right);
+            }
         }
     }
 }
