@@ -47,19 +47,13 @@ impl<T: PartialOrd + Display + Default> RedBlackTree<T> {
 
         let new_leaf_idx = Some(self.bst.insert_node(leaf));
         self.set_node_color(new_leaf_idx, TreeColors::Red);
-        self.recolor_nodes(new_leaf_idx);
+        self.recolor_nodes(new_leaf_idx.unwrap());
     }
 
-    fn recolor_nodes(&mut self, node_idx_opt: Option<Index>) {
-        if node_idx_opt.is_none() {
-            return;
-        }
-
-        let node_idx = node_idx_opt.unwrap();
-
+    fn recolor_nodes(&mut self, node_idx: Index) {
         // If node is root, color it black then return. Tree has been recolored successfully
-        if self.bst.root == node_idx_opt {
-            self.set_node_color(node_idx_opt, TreeColors::Black);
+        if self.bst.root == Some(node_idx) {
+            self.set_node_color(Some(node_idx), TreeColors::Black);
             return;
         }
 
@@ -68,7 +62,7 @@ impl<T: PartialOrd + Display + Default> RedBlackTree<T> {
         // Parent or current node color is black, which means that the
         //  RB-property has been upheld
         if self.get_node_color(parent_idx_opt) == TreeColors::Black
-            || self.get_node_color(node_idx_opt) == TreeColors::Black
+            || self.get_node_color(Some(node_idx)) == TreeColors::Black
         {
             return;
         }
@@ -97,7 +91,7 @@ impl<T: PartialOrd + Display + Default> RedBlackTree<T> {
             }
             TreeColors::Black => {
                 let node_is_left_child =
-                    self.bst.nodes[parent_idx_opt.unwrap()].left == node_idx_opt;
+                    self.bst.nodes[parent_idx_opt.unwrap()].left == Some(node_idx);
                 // 4 possible cases here:
                 match (parent_is_left_child, node_is_left_child) {
                     // 1: parent is left child, node is left child
@@ -108,13 +102,13 @@ impl<T: PartialOrd + Display + Default> RedBlackTree<T> {
                     (true, false) => {
                         self.rotate_node_left(node_idx);
                         self.rotate_node_right(node_idx);
-                        parent_idx_opt = node_idx_opt;
+                        parent_idx_opt = Some(node_idx);
                     }
                     // 3: mirror of 2
                     (false, true) => {
                         self.rotate_node_right(node_idx);
                         self.rotate_node_left(node_idx);
-                        parent_idx_opt = node_idx_opt;
+                        parent_idx_opt = Some(node_idx);
                     }
                     // 5: mirror of 1
                     (false, false) => {
@@ -131,7 +125,9 @@ impl<T: PartialOrd + Display + Default> RedBlackTree<T> {
             }
         };
 
-        self.recolor_nodes(grandparent_idx_opt);
+        if let Some(grandparent_idx) = grandparent_idx_opt {
+            self.recolor_nodes(grandparent_idx);
+        }
     }
 
     // When rotating a node right, we set the parent's left child equal to the
@@ -275,9 +271,9 @@ impl<T: PartialOrd + Display + Default> RedBlackTree<T> {
     }
 
     // Private method for printing node diagnostic data
-    fn print_node(&self, node_idx: Index) {
+    fn node_to_str(&self, node_idx: Index) -> String {
         let node = &self.bst.nodes[node_idx];
-        println!(
+        format!(
             "I: {:?}, C:{:?}, Data: {}, L: {:?}, R: {:?}, P: {:?}",
             node_idx,
             self.colors.get(&node_idx),
@@ -285,16 +281,20 @@ impl<T: PartialOrd + Display + Default> RedBlackTree<T> {
             node.left,
             node.right,
             node.parent
-        );
+        )
     }
+}
 
+impl<T: PartialOrd + Display + Default> Display for RedBlackTree<T> {
     // Simple BFS traversing method that prints each node's information for diagnostic purposes
-    pub fn print_tree(&mut self) {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let mut nodes = VecDeque::new();
+        let mut node_strs = vec![];
+
         nodes.push_front(self.bst.root);
         while let Some(node_idx_opt) = nodes.pop_front() {
             let node_idx = node_idx_opt.unwrap();
-            self.print_node(node_idx);
+            node_strs.push(self.node_to_str(node_idx));
             let node = &self.bst.nodes[node_idx];
 
             if node.left.is_some() {
@@ -305,5 +305,7 @@ impl<T: PartialOrd + Display + Default> RedBlackTree<T> {
                 nodes.push_back(node.right);
             }
         }
+
+        write!(f, "{}", node_strs.join("\n"))
     }
 }

@@ -1,23 +1,17 @@
 use derpy::red_black_tree::RedBlackTree;
 
 fn verify_tree_bfs(bst: &mut RedBlackTree<i32>, expected_vals: Vec<i32>) {
-    assert!(
-        bst.get_size() == expected_vals.len(),
-        "Expected tree size to be {}, but it was {}",
+    assert_eq!(
+        bst.get_size(),
         expected_vals.len(),
-        bst.get_size()
+        "Number of nodes in tree doesn't match the expected number"
     );
 
     let mut b_tree_iter = bst.bfs_iter();
     for val in expected_vals {
         let node = b_tree_iter.next();
 
-        assert!(
-            node == Some(&val),
-            "Expected node to be {:?}, but it was {:?}",
-            Some(&val),
-            node
-        );
+        assert_eq!(node, Some(&val), "Nodes don't match");
     }
     assert_eq!(b_tree_iter.next(), None);
 }
@@ -118,7 +112,6 @@ fn right_subtree_with_root_rotation() {
     b_tree.insert(54);
     b_tree.insert(55);
     b_tree.insert(56);
-    b_tree.print_tree();
 
     let expected_order = vec![54, 42, 60, 25, 50, 55, 66, 12, 41, 56, 69];
     verify_tree_bfs(&mut b_tree, expected_order)
