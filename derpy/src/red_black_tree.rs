@@ -1,7 +1,7 @@
 use generational_arena::Index;
 use std::collections::{HashMap, VecDeque};
 
-use super::base_tree::{BfsIter, DfsIter, InternalBinarySearchTree, Node};
+use super::base_tree::{BfsIter, ChildSide, DfsIter, InternalBinarySearchTree, Node};
 use super::tree_errs::NodeNotFoundErr;
 
 use std::cmp::PartialOrd;
@@ -74,9 +74,9 @@ impl<T: PartialOrd + Display + Default> RedBlackTree<T> {
 
         let grandparent_node = &self.bst.nodes[grandparent_idx];
 
-        let mut parent_is_left_child = false;
+        let mut parent_child_side = ChildSide::Right;
         let uncle_idx_opt = if grandparent_node.left == parent_idx_opt {
-            parent_is_left_child = true;
+            parent_child_side = ChildSide::Left;
             grandparent_node.right
         } else {
             grandparent_node.left
@@ -90,28 +90,32 @@ impl<T: PartialOrd + Display + Default> RedBlackTree<T> {
                 self.set_node_color(parent_idx_opt, TreeColors::Black);
             }
             TreeColors::Black => {
-                let node_is_left_child =
-                    self.bst.nodes[parent_idx_opt.unwrap()].left == Some(node_idx);
+                let node_child_side =
+                    if self.bst.nodes[parent_idx_opt.unwrap()].left == Some(node_idx) {
+                        ChildSide::Left
+                    } else {
+                        ChildSide::Right
+                    };
                 // 4 possible cases here:
-                match (parent_is_left_child, node_is_left_child) {
+                match (parent_child_side, node_child_side) {
                     // 1: parent is left child, node is left child
-                    (true, true) => {
+                    (ChildSide::Left, ChildSide::Left) => {
                         self.rotate_node_right(parent_idx);
                     }
                     // 2: parent is left child, node is right child
-                    (true, false) => {
+                    (ChildSide::Left, ChildSide::Right) => {
                         self.rotate_node_left(node_idx);
                         self.rotate_node_right(node_idx);
                         parent_idx_opt = Some(node_idx);
                     }
                     // 3: mirror of 2
-                    (false, true) => {
+                    (ChildSide::Right, ChildSide::Left) => {
                         self.rotate_node_right(node_idx);
                         self.rotate_node_left(node_idx);
                         parent_idx_opt = Some(node_idx);
                     }
                     // 5: mirror of 1
-                    (false, false) => {
+                    (ChildSide::Right, ChildSide::Right) => {
                         self.rotate_node_left(parent_idx);
                     }
                 }
