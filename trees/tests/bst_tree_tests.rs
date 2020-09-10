@@ -1,4 +1,4 @@
-use derpy::binary_search_tree::BinarySearchTree;
+use trees::binary_search_tree::BinarySearchTree;
 
 fn verify_tree_bfs(bst: &mut BinarySearchTree<i32>, expected_vals: Vec<i32>) {
     assert_eq!(

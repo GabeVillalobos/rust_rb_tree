@@ -6,13 +6,6 @@ version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "derpy"
-version = "0.1.0"
-dependencies = [
- "generational-arena 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "generational-arena"
 version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -21,10 +14,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "rusty-bin"
+name = "trees"
 version = "0.1.0"
 dependencies = [
- "derpy 0.1.0",
+ "generational-arena 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [metadata]

@@ -1,4 +1,4 @@
-use derpy::red_black_tree::RedBlackTree;
+use trees::red_black_tree::RedBlackTree;
 
 fn verify_tree_bfs(bst: &mut RedBlackTree<i32>, expected_vals: Vec<i32>) {
     assert_eq!(

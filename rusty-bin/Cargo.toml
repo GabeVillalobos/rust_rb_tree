@@ -1,8 +1,0 @@
-[package]
-name = "rusty-bin"
-version = "0.1.0"
-authors = ["Gabe Villalobos <gvillalobos@scalecomputing.com>"]
-edition = "2018"
-
-[dependencies]
-derpy = { path = "../derpy"}
