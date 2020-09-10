@@ -19,6 +19,14 @@ pub struct InternalBinarySearchTree<T: Display + PartialOrd + Default> {
     pub nodes: Arena<BoxedNode<T>>,
 }
 
+// Enum used to signal whether a node is the left or right child for
+//  insertion and removal operations
+#[derive(Debug)]
+pub enum ChildSide {
+    Left,
+    Right,
+}
+
 // The copy trait facilitates easier node removal by allowing us to
 //  copy the contents of
 impl<T: Display + PartialOrd + Default> InternalBinarySearchTree<T> {
@@ -31,18 +39,20 @@ impl<T: Display + PartialOrd + Default> InternalBinarySearchTree<T> {
 
     pub fn insert_node(&mut self, mut new_leaf: Node<T>) -> Index {
         let mut cur_idx_option = self.root;
-        let mut left_side = false;
+        let mut child_side = ChildSide::Right;
 
         while let Some(cur_node_idx) = cur_idx_option {
             let cur_node = &mut self.nodes[cur_node_idx];
 
-            left_side = new_leaf.data < cur_node.data;
-
-            // choose a side to insert the new leaf
-            let next_node_idx_option = if left_side {
-                &mut cur_node.left
+            if new_leaf.data < cur_node.data {
+                child_side = ChildSide::Left;
             } else {
-                &mut cur_node.right
+                child_side = ChildSide::Right
+            }
+
+            let next_node_idx_option = match &child_side {
+                ChildSide::Left => &cur_node.left,
+                ChildSide::Right => &cur_node.right,
             };
 
             match next_node_idx_option {
@@ -60,11 +70,10 @@ impl<T: Display + PartialOrd + Default> InternalBinarySearchTree<T> {
         if let Some(parent_idx) = cur_idx_option {
             let parent = &mut self.nodes[parent_idx];
 
-            if left_side {
-                parent.left = Some(leaf_id);
-            } else {
-                parent.right = Some(leaf_id);
-            }
+            match &child_side {
+                ChildSide::Left => parent.left = Some(leaf_id),
+                ChildSide::Right => parent.right = Some(leaf_id),
+            };
         } else {
             // No parent found, so this leaf must be the root
             self.root = Some(leaf_id);
