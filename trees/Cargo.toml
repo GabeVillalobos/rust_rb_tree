@@ -1,8 +1,0 @@
-[package]
-name = "trees"
-version = "0.1.0"
-authors = ["Gabe Villalobos"]
-edition = "2018"
-
-[dependencies]
-generational-arena = "0.2"
